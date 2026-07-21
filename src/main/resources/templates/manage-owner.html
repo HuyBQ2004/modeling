@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Quản lý người dùng</title>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+    <style>
+        .divider {
+            border-right: 2px solid #ddd;
+            height: 100%;
+        }
+
+        #overlay1 {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #employeeForm {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 60%;
+            max-width: 500px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4">
+<div class="top-0 left-0 w-full">
+    <div class="fixed top-0 left-0 w-full">
+        <div th:replace="~{fragments/header :: header}"></div>
+    </div>
+    <div class="w-[90%] mx-auto bg-white p-6 rounded-lg shadow-md mt-28">
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="text-2xl font-semibold">Danh sách chủ cửa hàng</h1>
+            <button id="showFormButton" class="bg-blue-500 text-white px-4 py-2 rounded flex items-center">
+                <i class="fas fa-plus mr-2"></i> Thêm người dùng
+            </button>
+        </div>
+        <div class="flex justify-between items-center mb-4">
+            <p id="totalRecords" class="text-gray-600 mb-4">Tổng cộng: <span id="recordCount">3</span> bản ghi</p>
+            <div class="w-1/6 mb-4 bg-white rounded-lg p-4">
+                <select id="search-status"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="all" selected>All</option>
+                    <option value="active">Đang hoạt động</option>
+                    <option value="inactive">Đã khóa</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="overlay1" class="hidden inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+            <div class="w-11/12 md:w-2/3 lg:w-1/2 bg-white p-6 rounded-lg shadow-lg max-h-screen overflow-y-auto">
+                <div class="border-b pb-3 mb-3">
+                    <h5 class="text-lg font-semibold">Thông tin người dùng</h5>
+                </div>
+                <ul class="border-b">
+                    <li class="mr-1">
+                        <button class="bg-white inline-block py-2 px-4 text-blue-500 border-b-2 border-blue-500 focus:outline-none"
+                                id="info-tab1">Thông tin
+                        </button>
+                    </li>
+                </ul>
+                <div class="mt-3">
+                    <div id="info1" class="block">
+                        <form action="#" method="post">
+                            <div class="mt-4">
+                                <label class="block text-sm font-medium text-gray-700">Tên đăng nhập</label>
+                                <input name="username" type="text" class="w-full mt-1 p-2 border rounded-md"
+                                       placeholder="Nhập tên đăng nhập">
+                            </div>
+                            <div class="mt-4">
+                                <label class="block text-sm font-medium text-gray-700">Mật khẩu</label>
+                                <input name="password" type="password" class="w-full mt-1 p-2 border rounded-md"
+                                       placeholder="Nhập mật khẩu">
+                            </div>
+                            <div class="mt-4">
+                                <label class="block text-sm font-medium text-gray-700">Email</label>
+                                <input name="email" type="email" class="w-full mt-1 p-2 border rounded-md"
+                                       placeholder="Nhập email">
+                            </div>
+                            <div class="mt-4">
+                                <label class="block text-sm font-medium text-gray-700">Họ và tên</label>
+                                <input name="name" type="text" class="w-full mt-1 p-2 border rounded-md"
+                                       placeholder="Nhập họ và tên">
+                            </div>
+                            <div class="mt-4">
+                                <label class="block text-sm font-medium text-gray-700">Địa chỉ</label>
+                                <input name="address" type="text" class="w-full mt-1 p-2 border rounded-md"
+                                       placeholder="Nhập địa chỉ">
+                            </div>
+                            <div class="mt-4">
+                                <label class="block text-sm font-medium text-gray-700">Số điện thoại</label>
+                                <input name="phone" type="text" class="w-full mt-1 p-2 border rounded-md"
+                                       placeholder="Nhập số điện thoại">
+                            </div>
+                            <div class="mt-4">
+                                <label class="block text-sm font-medium text-gray-700">Ghi chú</label>
+                                <input name="note" type="text" class="w-full mt-1 p-2 border rounded-md"
+                                       placeholder="Nhập ghi chú">
+                            </div>
+                            <div class="mt-4">
+                                <label class="block text-sm font-medium text-gray-700">Ngày cập nhật</label>
+                                <input name="updatedAt" type="text" class="w-full mt-1 p-2 border rounded-md" readonly>
+                            </div>
+                            <div class="mt-4">
+                                <label class="block text-sm font-medium text-gray-700">Trạng thái</label>
+                                <input name="deleted" type="text" class="w-full mt-1 p-2 border rounded-md" readonly>
+                            </div>
+                            <div class="mt-6 flex justify-end gap-4">
+                                <button type="submit"
+                                        class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">Thêm
+                                </button>
+                                <button type="reset" class="bg-gray-300 px-4 py-2 rounded-md hover:bg-gray-400"
+                                        id="cancelButton1">Bỏ qua
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="table-auto border-collapse border w-full">
+                <thead>
+                <tr class="bg-gray-100">
+                    <th class="border p-2 relative">Id
+                        <div class="resizer"></div>
+                    </th>
+                    <th class="border p-2 relative">Tên
+                        <div class="resizer"></div>
+                    </th>
+                    <th class="border p-2 relative">Địa chỉ
+                        <div class="resizer"></div>
+                    </th>
+                    <th class="border p-2 relative">SĐT
+                        <div class="resizer"></div>
+                    </th>
+                    <th class="border p-2 relative">Email
+                        <div class="resizer"></div>
+                    </th>
+                    <th class="border p-2 relative">Ngày tạo
+                        <div class="resizer"></div>
+                    </th>
+                    <th class="border p-2 relative">Cập nhật
+                        <div class="resizer"></div>
+                    </th>
+                    <th class="border p-2 relative w-[340px] action-column">Hành động
+                        <div class="resizer"></div>
+                    </th>
+                </tr>
+                <tr class="bg-gray-50">
+                    <th class="border p-2">
+                        <div class="flex w-full gap-1">
+                            <input type="text" class="border rounded w-1/2 py-1 px-2" placeholder="Từ"
+                                   style="font-weight: normal;" id="search-id-min">
+                            <input type="text" class="border rounded w-1/2 py-1 px-2" placeholder="Đến"
+                                   style="font-weight: normal;" id="search-id-max">
+                        </div>
+                    </th>
+                    <td class="border p-2"><input type="text" class="w-full border rounded p-1" id="search-name"></td>
+                    <td class="border p-2"><input type="text" class="w-full border rounded p-1" id="search-address">
+                    </td>
+                    <td class="border p-2"><input type="text" class="w-full border rounded p-1" id="search-phone"></td>
+                    <td class="border p-2"><input type="text" class="w-full border rounded p-1" id="search-email"></td>
+                    <th class="border p-2">
+                        <div class="flex w-full gap-1">
+                            <input type="date" class="border rounded w-1/2 py-1 px-2" style="font-weight: normal;"
+                                   id="search-created-date-min">
+                            <input type="date" class="border rounded w-1/2 py-1 px-2" style="font-weight: normal;"
+                                   id="search-created-date-max">
+                        </div>
+                    </th>
+                    <th class="border p-2">
+                        <div class="flex w-full gap-1">
+                            <input type="date" class="border rounded w-1/2 py-1 px-2" style="font-weight: normal;"
+                                   id="search-updated-date-min">
+                            <input type="date" class="border rounded w-1/2 py-1 px-2" style="font-weight: normal;"
+                                   id="search-updated-date-max">
+                        </div>
+                    </th>
+                    <td class="border p-2">
+                        <div class="flex gap-2 w-full">
+                            <button id="clearFilters"
+                                    class="w-1/2 bg-white border border-red-500 text-red-500 px-2 py-1 rounded flex items-center justify-center hover:bg-red-500 hover:text-white transition duration-200">
+                                <i class="fas fa-times mr-1"></i> Bỏ lọc
+                            </button>
+                            <button id="toggleButtons"
+                                    class="w-1/2 bg-white border border-blue-500 text-blue-500 px-2 py-1 rounded flex items-center justify-center hover:bg-blue-500 hover:text-white transition duration-200">
+                                <i class="fas fa-angle-right mr-1"></i> Thu gọn
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                </thead>
+                <tbody id="tableBody">
+                <tr>
+                    <td class="border p-2">1</td>
+                    <td class="border p-2">Nguyễn Văn A</td>
+                    <td class="border p-2">123 Đường ABC, HN</td>
+                    <td class="border p-2">0901234567</td>
+                    <td class="border p-2">nguyenvana@gmail.com</td>
+                    <td class="border p-2">2025-01-01</td>
+                    <td class="border p-2">2025-03-10</td>
+                    <td class="border p-2 action-column">
+                        <div class="flex gap-2 w-full">
+                            <form action="#" method="get" onsubmit="return confirm('Bạn có chắc chắn muốn khóa?');"
+                                  class="w-1/2">
+                                <button type="submit"
+                                        class="w-full bg-red-500 text-white px-4 py-2 rounded-lg flex items-center justify-center hover:bg-red-600 transition duration-200">
+                                    <i class="fas fa-trash-alt"></i> <span>Khóa</span>
+                                </button>
+                            </form>
+                            <button class="showFormButton1 w-1/2 bg-yellow-300 text-black px-2 py-1 rounded flex items-center justify-center hover:bg-yellow-500 hover:text-white transition duration-200">
+                                <i class="fas fa-pencil-alt mr-1"></i> Sửa
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="border p-2">2</td>
+                    <td class="border p-2">Trần Thị B</td>
+                    <td class="border p-2">456 Đường XYZ, HCM</td>
+                    <td class="border p-2">0912345678</td>
+                    <td class="border p-2">tranthib@gmail.com</td>
+                    <td class="border p-2">2025-02-01</td>
+                    <td class="border p-2">2025-03-11</td>
+                    <td class="border p-2">
+                        <div class="flex gap-2 w-full">
+                            <form action="#" method="get" onsubmit="return confirm('Bạn có chắc chắn muốn khóa?');"
+                                  class="w-1/2">
+                                <button type="submit"
+                                        class="w-full bg-red-500 text-white px-4 py-2 rounded-lg flex items-center justify-center hover:bg-red-600 transition duration-200">
+                                    <i class="fas fa-trash-alt"></i> <span>Khóa</span>
+                                </button>
+                            </form>
+                            <button class="showFormButton1 w-1/2 bg-yellow-300 text-black px-2 py-1 rounded flex items-center justify-center hover:bg-yellow-500 hover:text-white transition duration-200">
+                                <i class="fas fa-pencil-alt mr-1"></i> Sửa
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="border p-2">3</td>
+                    <td class="border p-2">Lê Văn C</td>
+                    <td class="border p-2">789 Đường DEF, DN</td>
+                    <td class="border p-2">0923456789</td>
+                    <td class="border p-2">levanc@gmail.com</td>
+                    <td class="border p-2">2025-03-01</td>
+                    <td class="border p-2">2025-03-11</td>
+                    <td class="border p-2">
+                        <div class="flex gap-2 w-full">
+                            <form action="#" method="get" onsubmit="return confirm('Bạn có chắc chắn muốn mở khóa?');"
+                                  class="w-1/2">
+                                <button type="submit"
+                                        class="w-full bg-green-500 text-white px-4 py-2 rounded-lg flex items-center justify-center hover:bg-green-600 transition duration-200">
+                                    <i class="fas fa-undo mr-1"></i> <span>Mở khóa</span>
+                                </button>
+                            </form>
+                            <button class="showFormButton1 w-1/2 bg-yellow-300 text-black px-2 py-1 rounded flex items-center justify-center hover:bg-yellow-500 hover:text-white transition duration-200">
+                                <i class="fas fa-pencil-alt mr-1"></i> Sửa
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="w-full flex justify-center items-center mt-4 gap-12">
+            <button id="prevPage"
+                    class="bg-gray-200 text-black px-8 py-2 rounded hover:bg-gray-400 hover:text-white transition duration-200">
+                Trước
+            </button>
+            <div class="flex items-center">
+                <span>Trang</span>
+                <input type="text" id="currentPage" class="w-12 border rounded px-2 py-1 mx-2 text-center" value="1">
+                <span id="totalPages">/ 1</span>
+            </div>
+            <select id="recordsPerPage" class="border rounded px-4 py-2">
+                <option value="5">5 Bản ghi</option>
+                <option value="10">10 Bản ghi</option>
+                <option value="20">20 Bản ghi</option>
+            </select>
+            <button id="nextPage"
+                    class="bg-gray-200 text-black px-8 py-2 rounded hover:bg-gray-400 hover:text-white transition duration-200">
+                Sau
+            </button>
+        </div>
+    </div>
+</div>
+<div th:replace="~{fragments/script :: script}"></div>
+
+<script>
+    // Constants
+    const API_BASE_URL = 'http://localhost:8080/api/owner';
+    const DEFAULT_PAGE_SIZE = 5;
+    const DEFAULT_ROLE = 'ROLE_OWNER';
+
+    // State
+    let state = {
+        currentPage: 1,
+        recordsPerPage: DEFAULT_PAGE_SIZE,
+        totalPages: 1,
+        allUsers: [],
+        filteredUsers: [],
+        editingUserId: null
+    };
+
+    // Utility Functions
+    const formatTimestamp = (timestamp) => {
+        return new Date(timestamp).toLocaleString('vi-VN');
+    };
+
+    const getElement = (id) => document.getElementById(id);
+
+    const showToast = (message, type = 'success') => {
+        Toastify({
+            text: message,
+            duration: 3000,
+            gravity: 'top',
+            position: 'right',
+            backgroundColor: type === 'success' ? '#00b09b' : '#ff4444',
+        }).showToast();
+    };
+
+    // API Functions
+    const fetchUsers = async (page = 0, size = state.recordsPerPage) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/get-all?page=${page}&size=${size}`);
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Error fetching users:', error);
+            return null;
+        }
+    };
+
+    const createUser = async (userData) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/create`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(userData),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw errorData;
+            }
+            return await response.json();
+        } catch (error) {
+            throw error;
+        }
+    };
+
+    const updateUser = async (userId, userData) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/update/${userId}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(userData),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw errorData;
+            }
+            return await response.json();
+        } catch (error) {
+            throw error;
+        }
+    };
+
+    const deleteUser = async (userId, currentUserData, setDeleted) => {
+        const userData = {
+            phone: currentUserData.phone || '',
+            role: DEFAULT_ROLE,
+            name: currentUserData.name || currentUserData.username || '',
+            address: currentUserData.address || '',
+            deleted: setDeleted,
+            note: currentUserData.note || ''
+        };
+        return updateUser(userId, userData);
+    };
+
+    // Render Functions
+    const renderTable = (users) => {
+        const tableBody = getElement('tableBody');
+        tableBody.innerHTML = '';
+
+        users.forEach(user => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+            <td class="border p-2">${user.id}</td>
+            <td class="border p-2">${user.name || user.username}</td>
+            <td class="border p-2">${user.address || ''}</td>
+            <td class="border p-2">${user.phone || ''}</td>
+            <td class="border p-2">${user.email}</td>
+            <td class="border p-2">${formatTimestamp(user.createdAt)}</td>
+            <td class="border p-2">${formatTimestamp(user.updatedAt)}</td>
+            <td class="border p-2">
+                <div class="flex gap-2 w-full action-column">
+                    <form action="#" method="get" onsubmit="deleteUserHandler(event, ${user.id}, ${user.deleted}); return false;" class="w-1/2">
+                        <button type="submit" class="w-full ${user.deleted ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'} text-white px-4 py-2 rounded-lg flex items-center justify-center transition duration-200">
+                            <i class="fas fa-${user.deleted ? 'undo' : 'trash-alt'}"></i>
+                            <span>${user.deleted ? 'Mở khóa' : 'Khóa'}</span>
+                        </button>
+                    </form>
+                    <button class="showFormButton1 w-1/2 bg-yellow-300 text-black px-2 py-1 rounded flex items-center justify-center hover:bg-yellow-500 hover:text-white transition duration-200" data-id="${user.id}">
+                        <i class="fas fa-pencil-alt mr-1"></i> Sửa
+                    </button>
+                </div>
+            </td>
+        `;
+            tableBody.appendChild(row);
+        });
+
+        getElement('recordCount').textContent = users.length;
+        attachEditButtonListeners();
+    };
+
+    // Filter Functions
+    const applyFilters = () => {
+        const filters = {
+            idMin: getElement('search-id-min').value,
+            idMax: getElement('search-id-max').value,
+            name: getElement('search-name').value.toLowerCase(),
+            address: getElement('search-address').value.toLowerCase(),
+            phone: getElement('search-phone').value,
+            email: getElement('search-email').value.toLowerCase(),
+            createdDateMin: getElement('search-created-date-min').value,
+            createdDateMax: getElement('search-created-date-max').value,
+            updatedDateMin: getElement('search-updated-date-min').value,
+            updatedDateMax: getElement('search-updated-date-max').value,
+            status: getElement('search-status').value
+        };
+
+        state.filteredUsers = state.allUsers.filter(user => {
+            if (filters.idMin && user.id < parseInt(filters.idMin)) return false;
+            if (filters.idMax && user.id > parseInt(filters.idMax)) return false;
+            if (filters.name && !(user.name?.toLowerCase().includes(filters.name) || user.username.toLowerCase().includes(filters.name))) return false;
+            if (filters.address && !user.address?.toLowerCase().includes(filters.address)) return false;
+            if (filters.phone && !user.phone?.includes(filters.phone)) return false;
+            if (filters.email && !user.email.toLowerCase().includes(filters.email)) return false;
+
+            const createdDate = new Date(user.createdAt);
+            if (filters.createdDateMin) {
+                const minDate = new Date(filters.createdDateMin);
+                if (createdDate < minDate) return false;
+            }
+            if (filters.createdDateMax) {
+                const maxDate = new Date(filters.createdDateMax);
+                maxDate.setHours(23, 59, 59, 999);
+                if (createdDate > maxDate) return false;
+            }
+
+            const updatedDate = new Date(user.updatedAt);
+            if (filters.updatedDateMin) {
+                const minDate = new Date(filters.updatedDateMin);
+                if (updatedDate < minDate) return false;
+            }
+            if (filters.updatedDateMax) {
+                const maxDate = new Date(filters.updatedDateMax);
+                maxDate.setHours(23, 59, 59, 999);
+                if (updatedDate > maxDate) return false;
+            }
+
+            if (filters.status !== 'all') {
+                if (filters.status === 'active' && user.deleted) return false;
+                if (filters.status === 'inactive' && !user.deleted) return false;
+            }
+
+            return true;
+        });
+
+        renderTable(state.filteredUsers);
+    };
+
+    // Form Functions
+    const populateForm = (user = {}) => {
+        const formFields = {
+            username: user.name || user.username || '',
+            email: user.email || '',
+            phone: user.phone || '',
+            address: user.address || '',
+            name: user.name || user.username || '',
+            note: user.note || '',
+            updatedAt: user.updatedAt ? formatTimestamp(user.updatedAt) : '',
+            deleted: user.deleted ? 'Đã khóa' : 'Đang hoạt động'
+        };
+
+        Object.entries(formFields).forEach(([key, value]) => {
+            getElement('overlay1').querySelector(`input[name='${key}']`).value = value;
+        });
+
+        const passwordField = getElement('overlay1').querySelector('input[name="password"]').parentElement;
+        passwordField.style.display = 'none';
+
+        const lockedFields = ['username', 'email', 'updatedAt', 'deleted'];
+        lockedFields.forEach(field => {
+            const input = getElement('overlay1').querySelector(`input[name="${field}"]`);
+            input.setAttribute('readonly', true);
+            input.classList.add('bg-gray-100');
+        });
+
+        state.editingUserId = user.id;
+        getElement('overlay1').querySelector('button[type="submit"]').textContent = 'Cập nhật';
+    };
+
+    const resetForm = () => {
+        getElement('overlay1').querySelector('form').reset();
+        const passwordField = getElement('overlay1').querySelector('input[name="password"]').parentElement;
+        passwordField.style.display = 'block';
+        const updatedAtField = getElement('overlay1').querySelector('input[name="updatedAt"]').parentElement;
+        updatedAtField.style.display = 'none';
+        const deletedField = getElement('overlay1').querySelector('input[name="deleted"]').parentElement;
+        deletedField.style.display = 'none';
+
+        const lockedFields = ['username', 'email', 'updatedAt', 'deleted'];
+        lockedFields.forEach(field => {
+            const input = getElement('overlay1').querySelector(`input[name="${field}"]`);
+            input.removeAttribute('readonly');
+            input.classList.remove('bg-gray-100');
+        });
+
+        state.editingUserId = null;
+        getElement('overlay1').querySelector('button[type="submit"]').textContent = 'Thêm';
+    };
+
+    const validateUserData = (data, isUpdate = false) => {
+        const errors = [];
+        if (!isUpdate) {
+            if (!data.username) errors.push('Tên người dùng không được để trống');
+            if (!data.email) errors.push('Email không được để trống');
+        }
+        if (!data.phone) errors.push('Số điện thoại không được để trống');
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email) && !isUpdate) errors.push('Email không hợp lệ');
+        if (!/^0\d{9}$/.test(data.phone)) errors.push('Số điện thoại phải có 10 chữ số và bắt đầu bằng 0');
+        return errors;
+    };
+
+    // Event Handlers
+    const loadUsers = async () => {
+        const data = await fetchUsers(state.currentPage - 1, state.recordsPerPage);
+        if (data) {
+            state.allUsers = data.content;
+            state.filteredUsers = [...state.allUsers]; // Load hết tất cả user mà không lọc
+            state.totalPages = data.totalPages;
+            getElement('totalPages').textContent = `/ ${state.totalPages}`;
+            getElement('recordCount').textContent = data.totalElements;
+            getElement('currentPage').value = state.currentPage;
+            renderTable(state.filteredUsers); // Hiển thị ngay mà không qua applyFilters ban đầu
+        }
+    };
+
+    const attachEditButtonListeners = () => {
+        document.querySelectorAll('.showFormButton1').forEach(button => {
+            button.addEventListener('click', () => {
+                const userId = button.dataset.id;
+                const user = state.allUsers.find(u => u.id == userId);
+                populateForm(user);
+
+                const updatedAtField = getElement('overlay1').querySelector('input[name="updatedAt"]').parentElement;
+                updatedAtField.style.display = 'block';
+                const deletedField = getElement('overlay1').querySelector('input[name="deleted"]').parentElement;
+                deletedField.style.display = 'block';
+
+                getElement('overlay1').style.display = 'flex';
+            });
+        });
+    };
+
+    const deleteUserHandler = async (event, userId, isCurrentlyDeleted) => {
+        event.preventDefault();
+        const user = state.allUsers.find(u => u.id === userId);
+        const action = isCurrentlyDeleted ? 'mở khóa' : 'khóa';
+        if (!confirm(`Bạn có chắc chắn muốn ${action}?`)) return;
+
+        try {
+            await deleteUser(userId, user, !isCurrentlyDeleted);
+            showToast(`${action === 'khóa' ? 'Khóa' : 'Mở khóa'} người dùng thành công!`, 'success');
+            loadUsers();
+        } catch (error) {
+            if (error.status === 400 && error.errors) {
+                error.errors.forEach(err => showToast(err, 'error'));
+            } else {
+                showToast(`Có lỗi xảy ra khi ${action} người dùng`, 'error');
+            }
+        }
+    };
+
+    const setupEventListeners = () => {
+        // Pagination
+        getElement('prevPage').addEventListener('click', () => {
+            if (state.currentPage > 1) {
+                state.currentPage--;
+                loadUsers();
+            }
+        });
+
+        getElement('nextPage').addEventListener('click', () => {
+            if (state.currentPage < state.totalPages) {
+                state.currentPage++;
+                loadUsers();
+            }
+        });
+
+        getElement('currentPage').addEventListener('change', (e) => {
+            const page = parseInt(e.target.value);
+            if (page >= 1 && page <= state.totalPages) {
+                state.currentPage = page;
+                loadUsers();
+            } else {
+                e.target.value = state.currentPage;
+            }
+        });
+
+        getElement('recordsPerPage').addEventListener('change', (e) => {
+            state.recordsPerPage = parseInt(e.target.value);
+            state.currentPage = 1;
+            loadUsers();
+        });
+
+        // Filters
+        const filterIds = ['search-id-min', 'search-id-max', 'search-name', 'search-address',
+            'search-phone', 'search-email', 'search-created-date-min', 'search-created-date-max',
+            'search-updated-date-min', 'search-updated-date-max', 'search-status'];
+
+        filterIds.forEach(id => getElement(id).addEventListener('input', applyFilters));
+
+        getElement('clearFilters').addEventListener('click', () => {
+            filterIds.forEach(id => {
+                const el = getElement(id);
+                if (id === 'search-status') {
+                    el.value = 'all';
+                } else {
+                    el.value = '';
+                }
+            });
+            applyFilters();
+        });
+
+        getElement('toggleButtons').addEventListener('click', () => {
+            const actionColumns = document.querySelectorAll('.action-column');
+            const toggleButton = getElement('toggleButtons');
+
+            const isCollapsed = actionColumns[0].classList.contains('collapsed');
+            actionColumns.forEach(column => {
+                if (isCollapsed) {
+                    column.style.width = '340px';
+                    column.classList.remove('collapsed');
+                } else {
+                    column.style.width = '100px';
+                    column.classList.add('collapsed');
+                }
+            });
+
+            toggleButton.innerHTML = isCollapsed
+                ? '<i class="fas fa-angle-right mr-1"></i> Thu gọn'
+                : '<i class="fas fa-angle-down mr-1"></i> Mở rộng';
+        });
+
+        // Overlay
+        const overlay = getElement('overlay1');
+        getElement('cancelButton1').addEventListener('click', () => overlay.style.display = 'none');
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) overlay.style.display = 'none';
+        });
+
+        getElement('showFormButton').addEventListener('click', () => {
+            resetForm();
+            overlay.style.display = 'flex';
+        });
+
+        // Handle form submission
+        getElement('overlay1').querySelector('form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const userData = {
+                phone: formData.get('phone'),
+                role: DEFAULT_ROLE,
+                name: formData.get('name'),
+                address: formData.get('address'),
+                note: formData.get('note'),
+                deleted: state.editingUserId ? (getElement('overlay1').querySelector('input[name="deleted"]').value === 'Đã khóa') : false
+            };
+
+            if (!state.editingUserId) {
+                userData.username = formData.get('username');
+                userData.email = formData.get('email');
+                userData.fullName = formData.get('name');
+                userData.password = formData.get('password');
+            }
+
+            const validationErrors = validateUserData(userData, !!state.editingUserId);
+            if (validationErrors.length > 0) {
+                validationErrors.forEach(error => showToast(error, 'error'));
+                return;
+            }
+
+            try {
+                if (state.editingUserId) {
+                    await updateUser(state.editingUserId, userData);
+                    showToast('Cập nhật người dùng thành công!', 'success');
+                } else {
+                    await createUser(userData);
+                    showToast('Tạo người dùng thành công!', 'success');
+                }
+                overlay.style.display = 'none';
+                loadUsers();
+            } catch (error) {
+                if (error.status === 400 && error.errors) {
+                    error.errors.forEach(err => showToast(err, 'error'));
+                } else {
+                    showToast(`Có lỗi xảy ra khi ${state.editingUserId ? 'cập nhật' : 'tạo'} người dùng`, 'error');
+                }
+            }
+        });
+    };
+
+    // Initialization
+    document.addEventListener('DOMContentLoaded', () => {
+        setupEventListeners();
+        loadUsers();
+    });
+</script>
+</body>
+</html>

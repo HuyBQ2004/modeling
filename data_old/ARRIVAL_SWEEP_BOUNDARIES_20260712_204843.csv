@@ -1,0 +1,4 @@
+Boundary,Condition,Predicted_Lambda_rps,Predicted_Rho
+n0,P(wait)=0.05,629.82,0.7694
+n_warn,E[Wq]=1/mu,804.54,0.9828
+n_deg,rho=0.90,736.76,0.9000

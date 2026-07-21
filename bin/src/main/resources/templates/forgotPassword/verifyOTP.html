@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify OTP - Rice Store</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+<div class="w-full max-w-md p-6">
+    <div class="bg-white rounded-lg shadow-md p-8">
+        <div class="flex justify-center">
+            <div class="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center mb-6">
+                <span class="text-white text-2xl font-bold">RS</span>
+            </div>
+        </div>
+
+        <h1 class="text-2xl font-bold text-center mb-2 text-gray-800">Verify OTP</h1>
+        <p class="text-center text-gray-600 mb-2">Enter the 6-digit code sent to</p>
+        <p class="text-center font-medium mb-6" th:text="${email}">email@example.com</p>
+
+        <div th:if="${param.error}"
+             class="bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded mb-4 text-center">
+            <span th:text="${error}">Error message</span>
+        </div>
+
+        <form th:action="@{/forgotPassword/verify}" method="post" class="space-y-4">
+            <input type="hidden" name="email" th:value="${email}">
+
+            <div class="flex justify-center gap-2 mb-6">
+                <input type="text" name="otp" maxlength="6" required
+                       class="w-full px-4 py-3 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                       placeholder="Enter 6-digit code">
+            </div>
+
+            <button type="submit"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded transition duration-300">
+                Verify Code
+            </button>
+        </form>
+
+        <div class="text-center mt-6">
+            <p class="text-gray-600 text-sm">Didn't receive code?</p>
+            <form th:action="@{/forgotPassword/resendOtp}" method="post">
+                <input type="hidden" name="email" th:value="${email}">
+                <button type="submit" class="text-blue-600 hover:text-blue-800 text-sm mt-1 inline-block">
+                    Resend Code
+                </button>
+            </form>
+        </div>
+        <div th:replace="~{fragments/script :: script}"></div>
+    </div>
+</div>
+</body>
+</html>

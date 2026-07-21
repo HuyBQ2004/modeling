@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="">
+<head>
+    <meta charset="UTF-8">
+    <title>Example</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+</head>
+<body class="bg-gray-100 p-4">
+
+<div class="fixed top-0 left-0 w-full">
+    <div th:replace="~{fragments/header :: header}"></div>
+    <div class="w-[90%] mx-auto bg-white p-6 rounded-lg shadow-md mt-12">
+
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="text-2xl font-semibold">Danh sách người nợ</h1>
+            <button class="bg-blue-500 text-white px-4 py-2 rounded flex items-center">
+
+                <i class="fas fa-plus mr-2"></i> THÊM NGƯỜI NỢ
+            </button>
+        </div>
+        <p class="text-gray-600 mb-4">Tổng cộng: 25 bản ghi</p>
+
+        <div class="overflow-x-auto">
+            <table class="table-auto border-collapse border w-full">
+                <thead>
+                <tr class="bg-gray-100">
+                    <th class="border p-2 relative">Id
+                        <div class="resizer"></div>
+                    </th>
+                    <th class="border p-2 relative">Tên
+                        <div class="resizer"></div>
+                    </th>
+                    <th class="border p-2 relative">Địa chỉ
+                        <div class="resizer"></div>
+                    </th>
+                    <th class="border p-2 relative">SĐT
+                        <div class="resizer"></div>
+                    </th>
+                    <th class="border p-2 relative">Email
+                        <div class="resizer"></div>
+                    </th>
+                    <th class="border p-2 relative">Tổng nợ
+                        <div class="resizer"></div>
+                    </th>
+                    <th class="border p-2 relative">Ngày tạo
+                        <div class="resizer"></div>
+                    </th>
+                    <th class="border p-2 relative">Cập nhật
+                        <div class="resizer"></div>
+                    </th>
+                    <th class="border p-2 relative w-[340px]">Hành động
+                        <div class="resizer"></div>
+                    </th>
+
+                </tr>
+
+                <tr class="bg-gray-50">
+                    <th class="border p-2">
+                        <div class="flex w-full gap-1">
+                            <input type="text" class="border rounded w-1/2 py-1 px-2" placeholder="Từ"
+                                   style="font-weight: normal;">
+                            <input type="text" class="border rounded w-1/2 py-1 px-2" placeholder="Đến"
+                                   style="font-weight: normal;">
+                        </div>
+                    </th>
+
+                    <td class="border p-2"><input type="text" class="w-full border rounded p-1"></td>
+                    <td class="border p-2"><input type="text" class="w-full border rounded p-1"></td>
+                    <td class="border p-2"><input type="text" class="w-full border rounded p-1"></td>
+                    <td class="border p-2"><input type="text" class="w-full border rounded p-1"></td>
+
+                    <th class="border p-2">
+                        <div class="flex w-full gap-1">
+                            <input type="text" class="border rounded w-1/2 py-1 px-2" placeholder="Từ"
+                                   style="font-weight: normal;">
+                            <input type="text" class="border rounded w-1/2 py-1 px-2" placeholder="Đến"
+                                   style="font-weight: normal;">
+                        </div>
+                    </th>
+
+                    <th class="border p-2">
+                        <div class="flex w-full gap-1">
+                            <input type="text" class="border rounded w-1/2 py-1 px-2" placeholder="Từ"
+                                   style="font-weight: normal;">
+                            <input type="text" class="border rounded w-1/2 py-1 px-2" placeholder="Đến"
+                                   style="font-weight: normal;">
+                        </div>
+                    </th>
+
+                    <th class="border p-2">
+                        <div class="flex w-full gap-1">
+                            <input type="text" class="border rounded w-1/2 py-1 px-2" placeholder="Từ"
+                                   style="font-weight: normal;">
+                            <input type="text" class="border rounded w-1/2 py-1 px-2" placeholder="Đến"
+                                   style="font-weight: normal;">
+                        </div>
+                    </th>
+
+                    <td class="border p-2">
+                        <div class="flex gap-2 w-full">
+                            <button id="clearFilters" class="w-1/2 bg-white border border-red-500 text-red-500 px-2 py-1 rounded flex items-center justify-center toggle-btn
+                                    hover:bg-red-500 hover:text-white transition duration-200"
+                                    data-full='<i class="fas fa-times mr-1"></i> Bỏ lọc'
+                                    data-icon='<i class="fas fa-times"></i>'>
+                                <i class="fas fa-times mr-1"></i> Bỏ lọc
+                            </button>
+
+
+                            <button id="toggleButtons" class="w-1/2 bg-white border border-blue-500 text-blue-500 px-2 py-1 rounded flex items-center justify-center toggle-btn
+                                hover:bg-blue-500 hover:text-white transition duration-200">
+                                <i class="fas fa-angle-right mr-1"></i> Thu gọn
+                            </button>
+                        </div>
+                    </td>
+
+                </tr>
+                </thead>
+
+                <tbody id="tableBody">
+                <tr>
+                    <td class="border p-2">108</td>
+                    <td class="border p-2">Nguyễn Văn A</td>
+                    <td class="border p-2">123 Đường ABC</td>
+                    <td class="border p-2">0987654321</td>
+                    <td class="border p-2">email@example.com</td>
+                    <td class="border p-2">0</td>
+                    <td class="border p-2">20/02/2025 13:44:03</td>
+                    <td class="border p-2">20/02/2025 13:44:03</td>
+                    <td class="border p-2">
+                        <div class="flex gap-2 w-full">
+                            <button class="w-1/4 bg-blue-500 text-white px-2 py-1 rounded flex items-center justify-center toggle-btn
+                                    hover:bg-blue-700 hover:text-white transition duration-200"
+                                    data-full='<i class="fas fa-info mr-1"></i> Chi tiết'
+                                    data-icon='<i class="fas fa-info"></i>'>
+                                <i class="fas fa-info mr-1"></i> Chi tiết
+                            </button>
+
+                            <button class="w-1/2 bg-white border border-green-500 text-green-500 px-2 py-1 rounded flex items-center justify-center toggle-btn
+                                    hover:bg-green-500 hover:text-white transition duration-200"
+                                    data-full='<i class="fas fa-plus mr-1"></i> Thêm phiếu nợ'
+                                    data-icon='<i class="fas fa-plus"></i>'>
+                                <i class="fas fa-plus mr-1"></i> Thêm phiếu nợ
+                            </button>
+
+                            <button class="w-1/4 bg-yellow-300 text-black px-2 py-1 rounded flex items-center justify-center toggle-btn
+                                    hover:bg-yellow-500 hover:text-white transition duration-200"
+                                    data-full='<i class="fas fa-pencil-alt mr-1"></i> Sửa'
+                                    data-icon='<i class="fas fa-pencil-alt"></i>'>
+                                <i class="fas fa-pencil-alt mr-1"></i> Sửa
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="w-full flex justify-center items-center mt-4 gap-12">
+            <button id="prevPage"
+                    class="bg-gray-200 text-black px-8 py-2 rounded hover:bg-gray-400 hover:text-white transition duration-200">
+                Trước
+            </button>
+
+            <div class="flex items-center">
+                <span>Trang</span>
+                <input type="text" id="currentPage" class="w-12 border rounded px-2 py-1 mx-2 text-center" value="1">
+                <span id="totalPages">/ 1</span>
+            </div>
+
+            <select id="recordsPerPage" class="border rounded px-4 py-2">
+                <option value="10">10 Bản ghi</option>
+                <option value="20">20 Bản ghi</option>
+                <option value="50">50 Bản ghi</option>
+            </select>
+
+            <button id="nextPage"
+                    class="bg-gray-200 text-black px-8 py-2 rounded hover:bg-gray-400 hover:text-white transition duration-200">
+                Sau
+            </button>
+        </div>
+
+
+    </div>
+</div>
+
+
+<div th:replace="~{fragments/script :: script}"></div>
+</body>
+</html>

@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="">
+<head>
+    <meta charset="UTF-8">
+    <title>Example</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <style>
+        .divider {
+            border-right: 2px solid #ddd; /* Đường kẻ chia đôi */
+            height: 100%;
+        }
+
+        #overlay1 {
+            display: none; /* Hidden by default */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* The form container */
+        #employeeForm {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 60%;
+            max-width: 500px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+<div class="top-0 left-0 w-full">
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <div class="w-[90%] mx-auto bg-white p-6 rounded-lg shadow-md mt-12">
+
+        <div class="flex justify-between items-center">
+            <h1 class="text-2xl font-semibold">Danh sách nhân viên</h1>
+            <div class="flex">
+                <a href="/owner/employees/addEmployee">
+                    <button name="addEmployee" id="showFormButton"
+                            class="bg-blue-500 text-white px-4 py-2 rounded flex items-center m-2">
+                        <i class="fas fa-plus mr-2"></i> Thêm Nhân viên
+                    </button>
+                </a>
+            </div>
+
+        </div>
+        <div class="flex justify-between items-center mb-4">
+
+            <!-- Update the total records count above the table -->
+            <p id="totalRecords" class="text-gray-600 mb-4">Tổng cộng: <span th:text="${totalItems}">0</span> bản ghi
+            </p>
+            <div class="w-1/6 mb-4 bg-white rounded-lg p-4">
+                <form th:action="@{/owner/employees}" method="get">
+                    <select id="search-status" name="trangthai"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            onchange="this.form.submit()"> <!-- Gửi form khi thay đổi -->
+                        <option value="working" th:selected="${trangthai == 'working'}">Đang làm việc</option>
+                        <option value="inactive" th:selected="${trangthai == 'inactive'}">Đã nghỉ</option>
+                    </select>
+                </form>
+            </div>
+
+
+        </div>
+
+        <div id="overlay1" class="hidden inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+            <div class="w-11/12 md:w-2/3 lg:w-1/2 bg-white p-6 rounded-lg shadow-lg max-h-screen overflow-y-auto">
+
+
+                <div class="border-b pb-3 mb-3">
+                    <h5 class="text-lg font-semibold">Thông tin nhân viên</h5>
+                </div>
+                <ul class="border-b">
+                    <li class="mr-1">
+                        <button class="bg-white inline-block py-2 px-4 text-blue-500 border-b-2 border-blue-500 focus:outline-none"
+                                id="info-tab1">Thông tin
+                        </button>
+                    </li>
+                </ul>
+                <div class="mt-3">
+                    <div id="info1" class="block">
+                        <form th:action="@{/owner/employees}" th:object="${employeeDTO}" method="post">
+                            <input type="hidden" name="id" id="employeeId">
+                            <!-- Rest of your form fields -->
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Cửa Hàng</label>
+                                    <input type="text" class="w-full mt-1 p-2 border rounded-md"
+                                           th:placeholder="${store.getName()}" disabled>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Địa Chỉ</label>
+                                    <input type="text" class="w-full mt-1 p-2 border rounded-md"
+                                           th:placeholder="${store.getAddress()}" disabled>
+                                </div>
+                            </div>
+                            <!-- ... -->
+                            <div class="mt-4">
+                                <label class="block text-sm font-medium text-gray-700">Tên Nhân Viên</label>
+                                <input name="name" type="text" class="w-full mt-1 p-2 border rounded-md"
+                                       placeholder="Nhập tên nhân viên"
+                                       th:field="*{name}">
+                            </div>
+                            <div class="mt-4">
+                                <label class="block text-sm font-medium text-gray-700">Email</label>
+                                <input name="email" type="email" class="w-full mt-1 p-2 border rounded-md"
+                                       placeholder="Nhập email"
+                                       th:field="*{email}">
+                            </div>
+                            <div class="mt-4">
+                                <label class="block text-sm font-medium text-gray-700">Địa Chỉ</label>
+                                <input name="address" type="text" class="w-full mt-1 p-2 border rounded-md"
+                                       placeholder="Nhập địa chỉ"
+                                       th:field="*{address}">
+                            </div>
+                            <div class="mt-4">
+                                <label class="block text-sm font-medium text-gray-700">Số Điện Thoại</label>
+                                <input name="phone" type="text" class="w-full mt-1 p-2 border rounded-md"
+                                       placeholder="Nhập số điện thoại"
+                                       th:field="*{phone}">
+                            </div>
+                            <div class="mt-4">
+                                <label class="block text-sm font-medium text-gray-700">Ghi Chú</label>
+                                <input name="note" type="text" class="w-full mt-1 p-2 border rounded-md"
+                                       placeholder="Nhập ghi chú"
+                                       th:field="*{note}">
+                            </div>
+                            <div class="mt-6 flex justify-end gap-4">
+                                <button type="submit"
+                                        class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">Sửa
+                                </button>
+                                <button type="reset" class="bg-gray-300 px-4 py-2 rounded-md hover:bg-gray-400"
+                                        id="cancelButton1">Bỏ qua
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="bg-gray-50 p-4">
+            <form th:action="@{/owner/employees}" method="get">
+                <div class="flex space-x-2">
+                    <input
+                            type="text"
+                            name="name"
+                            th:value="${name}"
+                            placeholder="Tên"
+                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                    <input
+                            type="text"
+                            name="address"
+                            th:value="${address}"
+                            placeholder="Địa chỉ"
+                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                    <input
+                            type="text"
+                            name="phone"
+                            th:value="${phone}"
+                            placeholder="Số điện thoại"
+                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                    <input
+                            type="text"
+                            name="email"
+                            th:value="${email}"
+                            placeholder="Email"
+                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                    <button
+                            type="submit"
+                            class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition duration-200"
+                    >
+                        Tìm kiếm
+                    </button>
+                </div>
+            </form>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="table-auto border-collapse border w-full">
+                <thead>
+                <tr class="bg-gray-100">
+                    <th class="border p-2 relative" style="width: 105px;">Id
+                        <div class="resizer"></div>
+                    </th>
+                    <th class="border p-2 relative">Tên
+                        <div class="resizer"></div>
+                    </th>
+                    <th class="border p-2 relative">Địa chỉ
+                        <div class="resizer"></div>
+                    </th>
+                    <th class="border p-2 relative">SĐT
+                        <div class="resizer"></div>
+                    </th>
+                    <th class="border p-2 relative">Email
+                        <div class="resizer"></div>
+                    </th>
+                    <th class="border p-2 relative" style="width: 105px;">Ngày tạo
+                        <div class="resizer"></div>
+                    </th>
+                    <th class="border p-2 relative" style="width: 105px;">Cập nhật
+                        <div class="resizer"></div>
+                    </th>
+                    <th class="border p-2 relative" style="width: 105px;">Hành động
+                        <div class="resizer"></div>
+                    </th>
+
+                </tr>
+
+                </thead>
+
+                <tbody id="tableBody">
+                <tr th:each="employee : ${employees}">
+                    <td class="border p-2" th:text="${employee.getId()}"></td>
+                    <td class="border p-2" th:text="${employee.getName()}"></td>
+                    <td class="border p-2" th:text="${employee.getAddress()}"></td>
+                    <td class="border p-2" th:text="${employee.getPhone()}"></td>
+                    <td class="border p-2" th:text="${employee.getEmail()}"></td>
+                    <td class="border p-2"
+                        th:text="${#temporals.format(employee.createdAt, 'dd/MM/yyyy HH:mm:ss')}"></td>
+                    <td class="border p-2"
+                        th:text="${#temporals.format(employee.updatedAt, 'dd/MM/yyyy HH:mm:ss')}"></td>
+                    <td class="border p-2">
+                        <div class="flex gap-2 w-full">
+                            <form th:if="${!employee.isDeleted()}" class="w-1/2 "
+                                  th:action="@{/owner/employees/{id}(id=${employee.getId()})}" method="get"
+                                  onsubmit="return confirm('Bạn có chắc chắn muốn xóa?');">
+                                <button type="submit"
+
+                                        class="w-full bg-red-500 text-white px-4 py-2 rounded-lg flex items-center justify-center
+                                toggle-btn button-xoa space-x-2
+                                hover:bg-red-600 transition duration-200"
+                                        data-full='<i class="fas fa-trash-alt"></i> Xóa'
+                                        data-icon='<i class="fas fa-trash-alt"></i>'>
+                                    <i class="fas fa-trash-alt"></i>
+                                    <span>Xóa</span>
+                                </button>
+                            </form>
+
+                            <form th:action="@{/owner/employees/{id}(id=${employee.getId()})}" method="get"
+                                  th:unless="${!employee.isDeleted()}" class="w-1/2"
+                                  onsubmit="return confirm('Bạn có chắc chắn muốn khôi phục?');">
+                                <button
+                                        type="submit" class="w-full bg-green-500 text-white px-4 py-2 rounded-lg flex items-center justify-center toggle-btn button-khoi-phuc space-x-2
+                                            hover:bg-green-600 hover:text-white transition duration-200"
+                                        data-full='<i class="fas fa-undo mr-1"></i> Khôi Phục'
+                                        data-icon='<i class="fas fa-undo mr-1-alt"></i>'>
+                                    <i class="fas fa-undo mr-1"></i> <span>Khôi Phục</span>
+                                </button>
+                            </form>
+                            <button
+                                    class="showFormButton1 w-1/2 bg-yellow-300 text-black px-2 py-1 rounded flex items-center justify-center toggle-btn
+                                    hover:bg-yellow-500 hover:text-white transition duration-200"
+                                    data-full='<i class="fas fa-pencil-alt mr-1"></i> Sửa'
+                                    data-icon='<i class="fas fa-pencil-alt"></i>'>
+                                <i class="fas fa-pencil-alt mr-1"></i> Sửa
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+    <div class="w-full flex justify-center items-center mt-4 gap-12">
+        <a th:if="${currentPage > 0}"
+           th:href="@{/owner/employees(page=${currentPage - 1}, size=${pageSize}, trangthai=${trangthai})}"
+           class="bg-gray-200 text-black px-8 py-2 rounded hover:bg-gray-400 hover:text-white transition duration-200">
+            Trước
+        </a>
+        <button id="prevPage" th:unless="${currentPage > 0}"
+                class="bg-gray-100 text-gray-400 px-8 py-2 rounded cursor-not-allowed" disabled>
+            Trước
+        </button>
+        <div class="flex items-center">
+            <span>Trang</span>
+            <input id="currentPage" class="w-12 border rounded px-2 py-1 mx-2 text-center"
+                   th:value="${currentPage + 1}"></input>
+            <span id="totalPages" th:text="'/ ' + ${totalPages}">/ 1</span>
+        </div>
+        <select id="recordsPerPage" class="border rounded px-4 py-2"
+                th:data-trangthai="${trangthai}"
+                onchange="window.location.href = '/owner/employees?page=0&size=' + this.value + '&trangthai=' + this.dataset.trangthai">
+            <option th:value="5" th:selected="${pageSize == 5}">5 Bản ghi</option>
+            <option th:value="10" th:selected="${pageSize == 10}">10 Bản ghi</option>
+            <option th:value="20" th:selected="${pageSize == 20}">20 Bản ghi</option>
+        </select>
+
+        <a th:if="${currentPage < totalPages - 1}"
+           th:href="@{/owner/employees(page=${currentPage + 1}, size=${pageSize}, trangthai=${trangthai})}"
+           class="bg-gray-200 text-black px-8 py-2 rounded hover:bg-gray-400 hover:text-white transition duration-200">
+            Sau
+        </a>
+        <button id="nextPage" th:unless="${currentPage < totalPages - 1}"
+                class="bg-gray-100 text-gray-400 px-8 py-2 rounded cursor-not-allowed" disabled>
+            Sau
+        </button>
+    </div>
+
+
+</div>
+
+<script th:src="@{/assets/js/resizeTable.js}"></script>
+<script th:src="@{/assets/js/collapse.js}"></script>
+<script th:src="@{/assets/js/currentPage.js}"></script>
+<script th:src="@{/assets/js/confirmDelete.js}"></script>
+<script th:src="@{/assets/js/selectDate.js}"></script>
+<script th:src="@{/assets/js/filterStores.js}"></script>
+<script th:src="@{/assets/js/paginationRecord.js}"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+
+<script>
+    var overlay1 = document.getElementById("overlay1");
+    var cancelButton1 = document.getElementById("cancelButton1");
+
+    // Gán sự kiện click cho tất cả nút "Sửa" khi trang được load
+    document.querySelectorAll(".showFormButton1").forEach(function (button) {
+        button.addEventListener("click", function () {
+            // Lấy hàng chứa nút "Sửa" được bấm
+            var row = this.closest("tr");
+
+            // Lấy dữ liệu của nhân viên từ hàng đó
+            var employeeId = row.cells[0].textContent;
+            var name = row.cells[1].textContent;
+            var address = row.cells[2].textContent;
+            var phone = row.cells[3].textContent;
+            var email = row.cells[4].textContent;
+
+            // Gán giá trị vào form trong overlay
+            document.querySelector("#employeeId").value = employeeId;
+            document.querySelector("#overlay1 input[name='name']").value = name;
+            document.querySelector("#overlay1 input[name='email']").value = email;
+            document.querySelector("#overlay1 input[name='phone']").value = phone;
+            document.querySelector("#overlay1 input[name='address']").value = address;
+            // Note field might not be visible in the table
+
+            // Hiển thị overlay với form sửa
+            overlay1.style.display = "flex";
+        });
+    });
+
+    // Khi bấm "Bỏ qua", ẩn overlay đi
+    cancelButton1.onclick = function () {
+        overlay1.style.display = "none";
+    };
+
+    // Ẩn overlay khi bấm bên ngoài form
+    overlay1.addEventListener("click", function (event) {
+        if (event.target === overlay1) {
+            overlay1.style.display = "none";
+        }
+    });
+</script>
+</body>
+</html>

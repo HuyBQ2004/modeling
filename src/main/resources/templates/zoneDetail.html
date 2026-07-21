@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Chi Tiết Khu Vực</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 p-6">
+<div th:replace="~{fragments/header :: header}"></div><br><br>
+<div class="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
+    <h1 class="text-2xl font-bold text-center mb-6">Chi Tiết Khu Vực</h1>
+
+    <!-- Tên khu vực -->
+    <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700">Tên Khu Vực:</label>
+        <p th:text="${zone.name}" class="mt-1 block w-full border border-gray-300 rounded-md p-2"></p>
+    </div>
+
+    <!-- Tên sản phẩm -->
+    <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700">Tên Sản Phẩm:</label>
+        <p th:text="${product != null ? product.name : 'Chưa có sản phẩm'}"
+           class="mt-1 block w-full border border-gray-300 rounded-md p-2"></p>
+    </div>
+
+    <!-- Số lượng -->
+    <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700">Số Lượng:</label>
+        <p th:text="${zone.quantity != null ? zone.quantity : 'Tạm trống'}" class="mt-1 block w-full border border-gray-300 rounded-md p-2"></p>
+    </div>
+
+    <!-- Ngày tạo -->
+    <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700">Ngày Tạo:</label>
+        <p th:text="${zone.createdAt != null ? #temporals.format(zone.createdAt, 'dd/MM/yyyy HH:mm:ss') : 'Tạm trống'}"
+           class="mt-1 block w-full border border-gray-300 rounded-md p-2"></p>
+    </div>
+
+    <!-- Nút quay lại -->
+    <div class="flex justify-center">
+        <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                th:onclick="|window.location.href='@{/owner/zone}'|" >Quay Lại</button>
+    </div>
+</div>
+</body>
+</html>

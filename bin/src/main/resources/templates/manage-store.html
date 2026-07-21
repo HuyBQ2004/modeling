@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Quản lý cửa hàng</title>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+    <style>
+        .divider {
+            border-right: 2px solid #ddd;
+            height: 100%;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 60%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .action-column {
+            transition: width 0.3s ease; /* Hiệu ứng mượt mà */
+        }
+
+        .action-column {
+            transition: width 0.3s ease; /* Hiệu ứng mượt mà khi thay đổi kích thước */
+        }
+
+        .action-column .flex {
+            flex-direction: row; /* Mặc định là ngang */
+            gap: 2px; /* Khoảng cách giữa các nút */
+        }
+
+        .action-column.collapsed .flex {
+            flex-direction: column; /* Khi thu gọn, chuyển thành dọc */
+            gap: 4px; /* Tăng khoảng cách khi xếp dọc */
+        }
+
+        .action-column button {
+            white-space: nowrap; /* Ngăn text xuống dòng */
+            overflow: hidden; /* Ẩn phần text bị tràn */
+            text-overflow: ellipsis; /* Thêm dấu "..." nếu text bị cắt */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4">
+<div class="top-0 left-0 w-full">
+    <div class="fixed top-0 left-0 w-full">
+        <div th:replace="~{fragments/header :: header}"></div>
+    </div>
+    <div class="w-[90%] mx-auto bg-white p-6 rounded-lg shadow-md mt-28">
+        <!-- Previous content unchanged until the View Details Modal -->
+        <div class="overflow-x-auto">
+            <table class="table-auto border-collapse border w-full">
+                <thead>
+                <tr class="bg-gray-100">
+                    <th class="border p-2">Id</th>
+                    <th class="border p-2">Tên cửa hàng</th>
+                    <th class="border p-2">Địa chỉ</th>
+                    <th class="border p-2">SĐT</th>
+                    <th class="border p-2">Email</th>
+                    <th class="border p-2">Ngày tạo</th>
+                    <th class="border p-2">Cập nhật</th>
+                    <th class="border p-2">Trạng thái</th>
+                    <th class="border p-2 w-[340px] action-column">Hành động</th>
+                </tr>
+                <tr class="bg-gray-50">
+                    <th class="border p-2">
+                        <div class="flex w-full gap-1">
+                            <input type="number" class="border rounded w-1/2 py-1 px-2" placeholder="Từ"
+                                   style="font-weight: normal;" id="search-id-min">
+                            <input type="number" class="border rounded w-1/2 py-1 px-2" placeholder="Đến"
+                                   style="font-weight: normal;" id="search-id-max">
+                        </div>
+                    </th>
+                    <td class="border p-2">
+                        <input type="text" class="w-full border rounded p-1" id="search-name"
+                               placeholder="Tìm tên cửa hàng">
+                    </td>
+                    <td class="border p-2">
+                        <input type="text" class="w-full border rounded p-1" id="search-address"
+                               placeholder="Tìm địa chỉ">
+                    </td>
+                    <td class="border p-2">
+                        <input type="text" class="w-full border rounded p-1" id="search-phone" placeholder="Tìm SĐT">
+                    </td>
+                    <td class="border p-2">
+                        <input type="text" class="w-full border rounded p-1" id="search-email" placeholder="Tìm email">
+                    </td>
+                    <th class="border p-2">
+                        <div class="flex w-full gap-1">
+                            <input type="date" class="border rounded w-1/2 py-1 px-2" style="font-weight: normal;"
+                                   id="search-created-date-min">
+                            <input type="date" class="border rounded w-1/2 py-1 px-2" style="font-weight: normal;"
+                                   id="search-created-date-max">
+                        </div>
+                    </th>
+                    <th class="border p-2">
+                        <div class="flex w-full gap-1">
+                            <input type="date" class="border rounded w-1/2 py-1 px-2" style="font-weight: normal;"
+                                   id="search-updated-date-min">
+                            <input type="date" class="border rounded w-1/2 py-1 px-2" style="font-weight: normal;"
+                                   id="search-updated-date-max">
+                        </div>
+                    </th>
+                    <th class="border p-2">
+                        <select class="w-full border rounded p-1" id="search-status-filter">
+                            <option value="">Tất cả</option>
+                            <option value="active">Đang hoạt động</option>
+                            <option value="inactive">Đã khóa</option>
+                        </select>
+                    </th>
+                    <td class="border p-2">
+                        <div class="flex gap-2 w-full">
+                            <button id="clearFilters"
+                                    class="w-1/2 bg-white border border-red-500 text-red-500 px-2 py-1 rounded flex items-center justify-center hover:bg-red-500 hover:text-white transition duration-200">
+                                <i class="fas fa-times mr-1"></i> Bỏ lọc
+                            </button>
+                            <button id="toggleButtons"
+                                    class="w-1/2 bg-white border border-blue-500 text-blue-500 px-2 py-1 rounded flex items-center justify-center hover:bg-blue-500 hover:text-white transition duration-200">
+                                <i class="fas fa-angle-right mr-1"></i> Thu gọn
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+
+        <!-- View Details Modal with Zone Pagination -->
+        <div id="viewDetailsModal" class="modal">
+            <div class="modal-content">
+                <h5 class="text-lg font-semibold border-b pb-3 mb-3">Chi tiết cửa hàng</h5>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><strong>Tên cửa hàng:</strong> <span id="detail-name"></span></div>
+                    <div><strong>Địa chỉ:</strong> <span id="detail-address"></span></div>
+                    <div><strong>SĐT:</strong> <span id="detail-phone"></span></div>
+                    <div><strong>Email:</strong> <span id="detail-email"></span></div>
+                    <div><strong>Ngày tạo:</strong> <span id="detail-createdAt"></span></div>
+                    <div><strong>Ngày cập nhật:</strong> <span id="detail-updatedAt"></span></div>
+                    <div><strong>Ghi chú:</strong> <span id="detail-note"></span></div>
+                    <div><strong>Cập nhật bởi:</strong> <span id="detail-updatedBy"></span></div>
+                </div>
+
+                <h6 class="text-md font-semibold mt-4 mb-2">Danh sách Zone</h6>
+                <div class="overflow-x-auto">
+                    <table class="table-auto border-collapse border w-full">
+                        <thead>
+                        <tr class="bg-gray-100">
+                            <th class="border p-2">Tên Zone</th>
+                            <th class="border p-2">Địa chỉ</th>
+                            <th class="border p-2">Tên sản phẩm</th>
+                            <th class="border p-2">Số lượng</th>
+                            <th class="border p-2">Ngày tạo</th>
+                            <th class="border p-2">Ngày cập nhật</th>
+                            <th class="border p-2">Tạo bởi</th>
+                            <th class="border p-2">Cập nhật bởi</th>
+                            <th class="border p-2">Trạng thái</th>
+                        </tr>
+                        </thead>
+                        <tbody id="zoneTableBody"></tbody>
+                    </table>
+                </div>
+
+                <!-- Zone Pagination -->
+                <div class="w-full flex justify-center items-center mt-4 gap-12">
+                    <button id="zonePrevPage"
+                            class="bg-gray-200 text-black px-8 py-2 rounded hover:bg-gray-400 hover:text-white">Trước
+                    </button>
+                    <div class="flex items-center">
+                        <span>Trang</span>
+                        <input type="number" id="zoneCurrentPage" class="w-12 border rounded px-2 py-1 mx-2 text-center"
+                               value="1" min="1">
+                        <span id="zoneTotalPages">/ 1</span>
+                    </div>
+                    <select id="zoneRecordsPerPage" class="border rounded px-4 py-2">
+                        <option value="5">5 Bản ghi</option>
+                        <option value="10" selected>10 Bản ghi</option>
+                        <option value="20">20 Bản ghi</option>
+                    </select>
+                    <button id="zoneNextPage"
+                            class="bg-gray-200 text-black px-8 py-2 rounded hover:bg-gray-400 hover:text-white">Sau
+                    </button>
+                </div>
+
+                <div class="mt-4">
+                    <button id="restoreButton" class="bg-green-500 text-white px-4 py-2 rounded flex items-center">
+                        <i class="fas fa-undo mr-2"></i> Khôi phục dữ liệu
+                    </button>
+                    <div id="restoreDatePicker" class="hidden mt-2">
+                        <label class="block text-sm font-medium text-gray-700">Chọn ngày khôi phục</label>
+                        <input type="date" id="restoreDate" class="mt-1 p-2 border rounded-md">
+                        <button id="confirmRestore" class="mt-2 bg-blue-500 text-white px-4 py-2 rounded">Xác nhận
+                        </button>
+                    </div>
+                </div>
+
+                <button id="closeDetails" class="mt-4 bg-gray-300 px-4 py-2 rounded-md hover:bg-gray-400">Đóng</button>
+            </div>
+        </div>
+
+        <!-- Pagination for Stores -->
+        <div class="w-full flex justify-center items-center mt-4 gap-12">
+            <button id="prevPage" class="bg-gray-200 text-black px-8 py-2 rounded hover:bg-gray-400 hover:text-white">
+                Trước
+            </button>
+            <div class="flex items-center">
+                <span>Trang</span>
+                <input type="number" id="currentPage" class="w-12 border rounded px-2 py-1 mx-2 text-center" value="1"
+                       min="1">
+                <span id="totalPages">/ 1</span>
+            </div>
+            <select id="recordsPerPage" class="border rounded px-4 py-2">
+                <option value="5">5 Bản ghi</option>
+                <option value="10" selected>10 Bản ghi</option>
+                <option value="20">20 Bản ghi</option>
+            </select>
+            <button id="nextPage" class="bg-gray-200 text-black px-8 py-2 rounded hover:bg-gray-400 hover:text-white">
+                Sau
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Khai báo biến toàn cục
+    let allStores = []; // Lưu trữ toàn bộ dữ liệu cửa hàng lấy từ API
+    let currentStoreId; // Theo dõi ID cửa hàng hiện tại để phân trang zone
+    let debounceTimer; // Biến để xử lý debounce
+
+    // Hàm lấy danh sách cửa hàng từ API (chỉ gọi một lần ban đầu)
+    // Hàm lấy danh sách cửa hàng từ API
+    async function fetchStores(page = 0, size = 10) {
+        const userNameLogin = sessionStorage.getItem('userNameLogin'); // Lấy userNameLogin từ sessionStorage
+        if (!userNameLogin) {
+            console.error('Không tìm thấy userNameLogin trong sessionStorage');
+            Toastify({
+                text: "Vui lòng đăng nhập để xem danh sách cửa hàng",
+                duration: 3000,
+                gravity: "top",
+                position: "right",
+                backgroundColor: "#ff4444"
+            }).showToast();
+            return;
+        }
+
+        const url = new URL('http://localhost:8080/restore/get-stores');
+        url.searchParams.append('page', page);
+        url.searchParams.append('size', size);
+
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`Lỗi HTTP! trạng thái: ${response.status}`);
+            const data = await response.json();
+            // Lọc dữ liệu phía client dựa trên createdBy
+            allStores = data.content;
+            renderStores(allStores, page, size); // Hiển thị dữ liệu đã lọc
+        } catch (error) {
+            console.error('Lỗi khi lấy danh sách cửa hàng:', error);
+            Toastify({
+                text: "Lỗi khi tải danh sách cửa hàng",
+                duration: 3000,
+                gravity: "top",
+                position: "right",
+                backgroundColor: "#ff4444"
+            }).showToast();
+        }
+    }
+
+    // Hàm lấy chi tiết cửa hàng và zone với phân trang
+    async function fetchStoreDetails(storeId, page = 0, size = 10) {
+        currentStoreId = storeId;
+        const url = new URL(`http://localhost:8080/restore/get-store/${storeId}`);
+        url.searchParams.append('page', page);
+        url.searchParams.append('size', size);
+
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`Lỗi HTTP! trạng thái: ${response.status}`);
+            const data = await response.json();
+
+            // Nếu không có dữ liệu
+            if (!data.content || data.content.length === 0) {
+                const store = allStores.find(s => s.id === parseInt(storeId)) || {};
+                document.getElementById('detail-name').textContent = store.name || '';
+                document.getElementById('detail-address').textContent = store.address || '';
+                document.getElementById('detail-phone').textContent = store.phone || '';
+                document.getElementById('detail-email').textContent = store.email || '';
+                document.getElementById('detail-createdAt').textContent = store.createdAt || '';
+                document.getElementById('detail-updatedAt').textContent = store.updatedAt || '';
+                document.getElementById('detail-note').textContent = store.note || 'Không có';
+                document.getElementById('detail-updatedBy').textContent = store.updatedBy || 'Chưa cập nhật';
+
+                document.getElementById('zoneTableBody').innerHTML = `
+                <tr>
+                    <td colspan="9" class="border p-2 text-center">Không có dữ liệu</td>
+                </tr>
+            `;
+                document.getElementById('zoneTotalPages').textContent = `/ 1`;
+                document.getElementById('zoneCurrentPage').value = 1;
+                document.getElementById('zonePrevPage').disabled = true;
+                document.getElementById('zoneNextPage').disabled = true;
+                document.getElementById('viewDetailsModal').style.display = 'flex';
+                return;
+            }
+
+            // Lấy bản ghi đầu tiên để truy cập store và product.zones
+            const firstZone = data.content.find(item => typeof item === 'object' && item.id) || {};
+            const store = firstZone.store || {};
+            const allZonesFromProduct = firstZone.product?.zones || [];
+
+            // Tạo danh sách zones đầy đủ
+            const validZones = data.content.map(item => {
+                if (typeof item === 'object' && item.id) {
+                    return item; // Bản ghi đầy đủ
+                } else {
+                    // Tìm thông tin chi tiết từ product.zones dựa trên ID
+                    return allZonesFromProduct.find(zone => zone.id === item) || {id: item};
+                }
+            });
+
+            // Cập nhật thông tin chi tiết cửa hàng
+            document.getElementById('detail-name').textContent = store.name || '';
+            document.getElementById('detail-address').textContent = store.address || '';
+            document.getElementById('detail-phone').textContent = store.phone || '';
+            document.getElementById('detail-email').textContent = store.email || '';
+            document.getElementById('detail-createdAt').textContent = store.createdAt || '';
+            document.getElementById('detail-updatedAt').textContent = store.updatedAt || '';
+            document.getElementById('detail-note').textContent = store.note || 'Không có';
+            document.getElementById('detail-updatedBy').textContent = store.updatedBy || 'Chưa cập nhật';
+
+            // Cập nhật bảng danh sách zone
+            const zoneTableBody = document.getElementById('zoneTableBody');
+            zoneTableBody.innerHTML = validZones.map(zone => `
+            <tr>
+                <td class="border p-2">${zone.name || 'Không có dữ liệu'}</td>
+                <td class="border p-2">${zone.address || 'Không có dữ liệu'}</td>
+                <td class="border p-2">${zone.product?.name || (typeof zone.product === 'number' ? 'ID: ' + zone.product : 'Không có dữ liệu')}</td>
+                <td class="border p-2">${zone.quantity || 'Không có dữ liệu'}</td>
+                <td class="border p-2">${zone.createdAt || 'Không có dữ liệu'}</td>
+                <td class="border p-2">${zone.updatedAt || 'Không có dữ liệu'}</td>
+                <td class="border p-2">${zone.createdBy?.username || zone.createdBy || 'Không có dữ liệu'}</td>
+                <td class="border p-2">${zone.updatedBy?.username || zone.updatedBy || 'Chưa cập nhật'}</td>
+                <td class="border p-2">${zone.isDeleted ? 'Đã xóa' : 'Hoạt động'}</td>
+            </tr>
+        `).join('');
+
+            // Cập nhật phân trang zone
+            document.getElementById('zoneTotalPages').textContent = `/ ${data.totalPages}`;
+            document.getElementById('zoneCurrentPage').value = page + 1;
+            document.getElementById('zonePrevPage').disabled = page === 0;
+            document.getElementById('zoneNextPage').disabled = page === data.totalPages - 1;
+
+            document.getElementById('viewDetailsModal').style.display = 'flex';
+        } catch (error) {
+            console.error('Lỗi khi lấy chi tiết cửa hàng:', error);
+            Toastify({
+                text: "Lỗi khi tải chi tiết cửa hàng",
+                duration: 3000,
+                gravity: "top",
+                position: "right",
+                backgroundColor: "#ff4444"
+            }).showToast();
+        }
+    }
+
+    // Hàm khôi phục dữ liệu
+    async function restoreData(date) {
+        try {
+            const formattedDate = date + 'T00:00:00.000'; // Định dạng ngày cho API
+            const response = await fetch(`http://localhost:8080/restore/restore-before-date?date=${formattedDate}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'}
+            });
+            if (!response.ok) throw new Error(`Lỗi HTTP! trạng thái: ${response.status}`);
+
+            Toastify({
+                text: "Khôi phục dữ liệu thành công",
+                duration: 3000,
+                gravity: "top",
+                position: "right",
+                backgroundColor: "#00cc00"
+            }).showToast();
+
+            // Làm mới dữ liệu sau khi khôi phục thành công
+            fetchStores(0, document.getElementById('recordsPerPage').value);
+            if (currentStoreId) fetchStoreDetails(currentStoreId, 0, document.getElementById('zoneRecordsPerPage').value);
+        } catch (error) {
+            console.error('Lỗi khi khôi phục dữ liệu:', error);
+            Toastify({
+                text: "Lỗi khi khôi phục dữ liệu",
+                duration: 3000,
+                gravity: "top",
+                position: "right",
+                backgroundColor: "#ff4444"
+            }).showToast();
+        }
+    }
+
+    // Hàm khóa hoặc mở khóa cửa hàng
+    async function toggleStoreStatus(storeId, isDeleted) {
+        try {
+            const response = await fetch(`http://localhost:8080/restore/${storeId}/status?isDeleted=${isDeleted}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'}
+            });
+            if (!response.ok) throw new Error(`Lỗi HTTP! trạng thái: ${response.status}`);
+
+            Toastify({
+                text: isDeleted ? "Khóa cửa hàng thành công" : "Mở khóa cửa hàng thành công",
+                duration: 3000,
+                gravity: "top",
+                position: "right",
+                backgroundColor: "#00cc00"
+            }).showToast();
+
+            // Làm mới dữ liệu sau khi thay đổi trạng thái
+            fetchStores(0, document.getElementById('recordsPerPage').value);
+        } catch (error) {
+            console.error(`Lỗi khi ${isDeleted ? 'khóa' : 'mở khóa'} cửa hàng:`, error);
+            Toastify({
+                text: `Lỗi khi ${isDeleted ? 'khóa' : 'mở khóa'} cửa hàng`,
+                duration: 3000,
+                gravity: "top",
+                position: "right",
+                backgroundColor: "#ff4444"
+            }).showToast();
+        }
+    }
+
+    // Hàm lọc dữ liệu cửa hàng phía client
+    function filterStores(stores, filters, page = 0, size = 10) {
+        let filteredStores = [...stores];
+
+        if (filters.idMin) {
+            filteredStores = filteredStores.filter(store => store.id >= parseInt(filters.idMin));
+        }
+        if (filters.idMax) {
+            filteredStores = filteredStores.filter(store => store.id <= parseInt(filters.idMax));
+        }
+        if (filters.name) {
+            filteredStores = filteredStores.filter(store =>
+                store.name.toLowerCase().includes(filters.name.toLowerCase()));
+        }
+        if (filters.address) {
+            filteredStores = filteredStores.filter(store =>
+                store.address.toLowerCase().includes(filters.address.toLowerCase()));
+        }
+        if (filters.phone) {
+            filteredStores = filteredStores.filter(store =>
+                store.phone.includes(filters.phone));
+        }
+        if (filters.email) {
+            filteredStores = filteredStores.filter(store =>
+                store.email.toLowerCase().includes(filters.email.toLowerCase()));
+        }
+        if (filters.createdDateMin) {
+            filteredStores = filteredStores.filter(store =>
+                new Date(store.createdAt) >= new Date(filters.createdDateMin));
+        }
+        if (filters.createdDateMax) {
+            filteredStores = filteredStores.filter(store =>
+                new Date(store.createdAt) <= new Date(filters.createdDateMax));
+        }
+        if (filters.updatedDateMin) {
+            filteredStores = filteredStores.filter(store =>
+                new Date(store.updatedAt) >= new Date(filters.updatedDateMin));
+        }
+        if (filters.updatedDateMax) {
+            filteredStores = filteredStores.filter(store =>
+                new Date(store.updatedAt) <= new Date(filters.updatedDateMax));
+        }
+        if (filters.status === 'active') {
+            filteredStores = filteredStores.filter(store => !store.deleted);
+        } else if (filters.status === 'inactive') {
+            filteredStores = filteredStores.filter(store => store.deleted);
+        }
+
+        const totalElements = filteredStores.length;
+        const totalPages = Math.ceil(totalElements / size);
+        const start = page * size;
+        const end = start + size;
+        const paginatedStores = filteredStores.slice(start, end);
+
+        return {
+            content: paginatedStores,
+            totalElements: totalElements,
+            totalPages: totalPages,
+            page: page
+        };
+    }
+
+    // Hàm hiển thị danh sách cửa hàng lên bảng
+    function renderStores(stores, page, size) {
+        const tableBody = document.getElementById('tableBody');
+        tableBody.innerHTML = stores.map(store => `
+        <tr>
+            <td class="border p-2">${store.id || ''}</td>
+            <td class="border p-2">${store.name || ''}</td>
+            <td class="border p-2">${store.address || ''}</td>
+            <td class="border p-2">${store.phone || ''}</td>
+            <td class="border p-2">${store.email || ''}</td>
+            <td class="border p-2">${store.createdAt || ''}</td>
+            <td class="border p-2">${store.updatedAt || ''}</td>
+            <td class="border p-2">${store.deleted ? 'Đã khóa' : 'Đang hoạt động'}</td>
+            <td class="border p-2 action-column"> <!-- Thêm class action-column -->
+                <div class="flex gap-2 w-full">
+                    <button class="viewDetailsBtn w-1/2 bg-blue-500 text-white px-2 py-1 rounded flex items-center justify-center hover:bg-blue-600" data-id="${store.id}">
+                        <i class="fas fa-eye mr-1"></i> Xem chi tiết
+                    </button>
+                    <form class="toggleStatusForm w-1/2" data-id="${store.id}" data-deleted="${store.deleted}">
+                        <button type="submit" class="w-full ${store.deleted ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'} text-white px-2 py-1 rounded flex items-center justify-center">
+                            <i class="fas ${store.deleted ? 'fa-unlock' : 'fa-lock'} mr-1"></i> ${store.deleted ? 'Mở khóa' : 'Khóa'}
+                        </button>
+                    </form>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+
+        document.getElementById('totalPages').textContent = `/ ${Math.ceil(stores.length / size)}`;
+        document.getElementById('currentPage').value = page + 1;
+        document.getElementById('prevPage').disabled = page === 0;
+        document.getElementById('nextPage').disabled = page === Math.ceil(stores.length / size) - 1;
+    }
+
+    // Hàm debounce
+    function debounce(func, wait) {
+        return function executedFunction(...args) {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => func(...args), wait);
+        };
+    }
+
+    // Hàm áp dụng bộ lọc
+    const applyFilters = debounce(() => {
+        const filters = getCurrentFilters();
+        const size = parseInt(document.getElementById('recordsPerPage').value);
+        const filteredData = filterStores(allStores, filters, 0, size);
+        renderStores(filteredData.content, filteredData.page, size);
+        document.getElementById('totalPages').textContent = `/ ${filteredData.totalPages}`;
+    }, 500);
+
+    // Hàm lấy giá trị bộ lọc hiện tại
+    function getCurrentFilters() {
+        return {
+            idMin: document.getElementById('search-id-min').value,
+            idMax: document.getElementById('search-id-max').value,
+            name: document.getElementById('search-name').value,
+            address: document.getElementById('search-address').value,
+            phone: document.getElementById('search-phone').value,
+            email: document.getElementById('search-email').value,
+            createdDateMin: document.getElementById('search-created-date-min').value,
+            createdDateMax: document.getElementById('search-created-date-max').value,
+            updatedDateMin: document.getElementById('search-updated-date-min').value,
+            updatedDateMax: document.getElementById('search-updated-date-max').value,
+            status: document.getElementById('search-status-filter').value
+        };
+    }
+
+    // Các sự kiện lắng nghe
+    document.querySelectorAll('input[id^="search-"], select[id^="search-"]').forEach(element => {
+        element.addEventListener('input', applyFilters);
+    });
+
+    document.getElementById('prevPage').addEventListener('click', () => {
+        const currentPage = parseInt(document.getElementById('currentPage').value) - 1;
+        const size = parseInt(document.getElementById('recordsPerPage').value);
+        if (currentPage > 0) {
+            const filters = getCurrentFilters();
+            const filteredData = filterStores(allStores, filters, currentPage - 1, size);
+            renderStores(filteredData.content, filteredData.page, size);
+        }
+    });
+
+    document.getElementById('nextPage').addEventListener('click', () => {
+        const currentPage = parseInt(document.getElementById('currentPage').value) - 1;
+        const size = parseInt(document.getElementById('recordsPerPage').value);
+        const filters = getCurrentFilters();
+        const filteredData = filterStores(allStores, filters, currentPage + 1, size);
+        renderStores(filteredData.content, filteredData.page, size);
+    });
+
+    document.getElementById('currentPage').addEventListener('change', (e) => {
+        const page = parseInt(e.target.value) - 1;
+        const size = parseInt(document.getElementById('recordsPerPage').value);
+        const filters = getCurrentFilters();
+        const filteredData = filterStores(allStores, filters, page, size);
+        renderStores(filteredData.content, filteredData.page, size);
+    });
+
+    document.getElementById('recordsPerPage').addEventListener('change', (e) => {
+        const size = parseInt(e.target.value);
+        const filters = getCurrentFilters();
+        const filteredData = filterStores(allStores, filters, 0, size);
+        renderStores(filteredData.content, filteredData.page, size);
+    });
+
+    document.getElementById('clearFilters').addEventListener('click', () => {
+        document.querySelectorAll('input[id^="search-"]').forEach(input => input.value = '');
+        document.getElementById('search-status-filter').value = '';
+        const size = parseInt(document.getElementById('recordsPerPage').value);
+        const filteredData = filterStores(allStores, {}, 0, size);
+        renderStores(filteredData.content, filteredData.page, size);
+    });
+
+    document.getElementById('toggleButtons').addEventListener('click', () => {
+        const actionColumns = document.querySelectorAll('.action-column');
+        const toggleButton = document.getElementById('toggleButtons');
+
+        // Kiểm tra trạng thái hiện tại dựa trên chiều rộng của cột đầu tiên
+        const isCollapsed = actionColumns[0].classList.contains('collapsed');
+
+        // Thay đổi kích thước và hướng của cột Hành động
+        actionColumns.forEach(column => {
+            if (isCollapsed) {
+                column.style.width = '340px'; // Kích thước ban đầu
+                column.classList.remove('collapsed'); // Xóa class để nút trở lại ngang
+            } else {
+                column.style.width = '100px'; // Kích thước thu gọn
+                column.classList.add('collapsed'); // Thêm class để nút xếp dọc
+            }
+        });
+
+        // Cập nhật nội dung nút
+        toggleButton.innerHTML = isCollapsed
+            ? '<i class="fas fa-angle-right mr-1"></i> Thu gọn'
+            : '<i class="fas fa-angle-down mr-1"></i> Mở rộng';
+    });
+
+    document.addEventListener('click', (e) => {
+        const viewBtn = e.target.closest('.viewDetailsBtn');
+        if (viewBtn) {
+            const storeId = viewBtn.dataset.id;
+            fetchStoreDetails(storeId, 0, document.getElementById('zoneRecordsPerPage').value);
+        }
+    });
+
+    document.getElementById('closeDetails').addEventListener('click', () => {
+        document.getElementById('viewDetailsModal').style.display = 'none';
+    });
+
+    // Sự kiện phân trang zone
+    document.getElementById('zonePrevPage').addEventListener('click', () => {
+        const currentPage = parseInt(document.getElementById('zoneCurrentPage').value) - 1;
+        if (currentPage > 0) fetchStoreDetails(currentStoreId, currentPage - 1, document.getElementById('zoneRecordsPerPage').value);
+    });
+
+    document.getElementById('zoneNextPage').addEventListener('click', () => {
+        const currentPage = parseInt(document.getElementById('zoneCurrentPage').value) - 1;
+        const totalPages = parseInt(document.getElementById('zoneTotalPages').textContent.split('/')[1].trim());
+        if (currentPage < totalPages - 1) fetchStoreDetails(currentStoreId, currentPage + 1, document.getElementById('zoneRecordsPerPage').value);
+    });
+
+    document.getElementById('zoneCurrentPage').addEventListener('change', (e) => {
+        const page = parseInt(e.target.value) - 1;
+        const totalPages = parseInt(document.getElementById('zoneTotalPages').textContent.split('/')[1].trim());
+        if (page >= 0 && page < totalPages) {
+            fetchStoreDetails(currentStoreId, page, document.getElementById('zoneRecordsPerPage').value);
+        } else {
+            e.target.value = currentPage + 1;
+        }
+    });
+
+    document.getElementById('zoneRecordsPerPage').addEventListener('change', (e) => {
+        fetchStoreDetails(currentStoreId, 0, e.target.value);
+    });
+
+    // Sự kiện khôi phục dữ liệu
+    document.getElementById('restoreButton').addEventListener('click', () => {
+        document.getElementById('restoreDatePicker').classList.toggle('hidden');
+    });
+
+    document.getElementById('confirmRestore').addEventListener('click', () => {
+        const restoreDate = document.getElementById('restoreDate').value;
+        if (restoreDate) {
+            restoreData(restoreDate);
+            document.getElementById('restoreDatePicker').classList.add('hidden');
+        }
+    });
+
+    // Sự kiện khóa/mở khóa cửa hàng
+    document.addEventListener('submit', (e) => {
+        const form = e.target.closest('.toggleStatusForm');
+        if (form) {
+            e.preventDefault();
+            const storeId = form.dataset.id;
+            const isDeleted = form.dataset.deleted === 'true'; // Trạng thái hiện tại
+            const newStatus = !isDeleted; // Đảo ngược trạng thái
+            const actionText = newStatus ? 'khóa' : 'mở khóa';
+
+            if (confirm(`Bạn có chắc chắn muốn ${actionText} cửa hàng này không?`)) {
+                toggleStoreStatus(storeId, newStatus);
+            }
+        }
+    });
+
+    // Tải dữ liệu ban đầu
+    fetchStores(0, document.getElementById('recordsPerPage').value);
+</script>
+</body>
+</html>

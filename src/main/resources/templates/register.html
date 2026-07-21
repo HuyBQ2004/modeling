@@ -1,0 +1,77 @@
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>
+        Đăng Ký
+    </title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+</head>
+<body class="bg-gray-900 flex items-center justify-center min-h-screen">
+<div class="bg-gray-800 p-8 rounded-lg shadow-lg flex flex-col md:flex-row items-center md:items-start">
+    <div class="md:w-1/2 w-full">
+        <h2 class="text-4xl text-white font-bold mb-8">
+            Đăng ký
+        </h2>
+        <form th:action="@{/register}" method="post" th:object="${user}" class="space-y-4">
+            <div class="flex items-center border border-gray-600 rounded-lg p-2">
+                <i class="fas fa-user text-gray-400 mr-2">
+                </i>
+                <input class="bg-transparent text-white w-full focus:outline-none" placeholder="Tên đăng nhập"
+                       th:field="*{username}" type="text" name="username" id="userName"/>
+            </div>
+            <div class="flex items-center border border-gray-600 rounded-lg p-2">
+                <i class="fas fa-envelope text-gray-400 mr-2">
+                </i>
+                <input class="bg-transparent text-white w-full focus:outline-none" placeholder="Email"
+                       th:field="*{email}" type="email" name="email" id="email"/>
+            </div>
+            <div class="flex items-center border border-gray-600 rounded-lg p-2">
+                <i class="fas fa-lock text-gray-400 mr-2">
+                </i>
+                <input class="bg-transparent text-white w-full focus:outline-none" placeholder="Mật khẩu"
+                       th:field="*{password}" type="password" name="password" id="password"/>
+                <button type="button" onclick="togglePassword('password', 'toggleIcon2')"
+                        class="ml-2 text-gray-500 hover:text-gray-700">
+                    <i id="toggleIcon2" class="fas fa-eye-slash"></i>
+                </button>
+            </div>
+            <div class="flex items-center border border-gray-600 rounded-lg p-2">
+                <i class="fas fa-key text-gray-400 mr-2">
+                </i>
+                <input class="bg-transparent text-white w-full focus:outline-none" placeholder="Nhập lại mật khẩu"
+                       type="password" name="confirmPassword" id="confirmPassword"/>
+                <button type="button" onclick="togglePassword('confirmPassword', 'toggleIcon1')"
+                        class="ml-2 text-gray-500 hover:text-gray-700">
+                    <i id="toggleIcon1" class="fas fa-eye-slash"></i>
+                </button>
+            </div>
+            <div class="flex items-center">
+                <input class="mr-2" id="terms" type="checkbox" name="acceptTerms"/>
+                <label class="text-gray-400" for="terms">
+                    Đồng ý với tất cả các điều khoản trong
+                    <a class="text-blue-500" href="#">
+                        Điều khoản dịch vụ
+                    </a>
+                </label>
+            </div>
+            <button name="submit" class="bg-blue-600 text-white py-2 px-4 rounded-lg w-full mt-4 hover:bg-blue-700">
+                ĐĂNG KÝ
+            </button>
+        </form>
+        <div class="mt-2 text-gray-400">
+            <a id="alreadyHaveAccount" class="text-while-500 hover:underline" th:href="@{/login}">
+                Đã có tài khoản
+            </a>
+        </div>
+    </div>
+    <div class="md:w-1/2 w-full mt-8 md:mt-0 md:ml-8">
+        <img class="rounded-lg" height="300"
+             src="https://storage.googleapis.com/a1aa/image/3TuUNns3Ow9fLvq6Q0QdZVrwfaIUM8tr6CcOaSqbL90.jpg"
+             width="400"/>
+    </div>
+    <div th:replace="~{fragments/noti :: noti}"></div>
+</div>
+<div th:replace="~{fragments/script :: script}"></div>
+</body>
+</html>

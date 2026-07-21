@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml" lang="">
+<head>
+    <meta charset="UTF-8">
+    <title>Quản lý khách hàng</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+    <style>
+        #errorToast {
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+            opacity: 0;
+            transform: translateX(100px);
+            max-width: 300px;
+        }
+
+        #errorToast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        #errorToast ul {
+            list-style-type: disc;
+            padding-left: 1rem;
+            margin: 0;
+        }
+
+        #errorToast li {
+            font-weight: 500;
+            color: #fff;
+            margin-bottom: 4px; /* Tạo khoảng cách giữa các lỗi */
+        }
+
+        #successToast {
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+            opacity: 0;
+            transform: translateX(100px);
+            max-width: 300px;
+        }
+
+        #successToast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+
+    </style>
+</head>
+<body class="bg-gray-100 p-4">
+<div class="fixed top-0 left-0 w-full">
+    <div th:replace="~{fragments/header :: header}"></div>
+    <div th:if="${errorMessage}" class="bg-red-500 text-white px-4 py-2 rounded mb-4">
+        <span th:text="${errorMessage}"></span>
+    </div>
+    <div id="errorToast"
+         class="hidden fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded shadow-lg transition-opacity duration-500">
+    </div>
+    <div id="successToast"
+         class="hidden fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg transition-opacity duration-500">
+    </div>
+
+</div>
+
+<div class="mt-28">
+    <div class="w-[90%] mx-auto bg-white p-6 rounded-lg shadow-md">
+
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="text-2xl font-semibold">Danh sách khách hàng</h1>
+            <button onclick="toggleModal('addCustomerModal')"
+                    class="bg-blue-500 text-white px-4 py-2 rounded flex items-center">
+                <i class="fas fa-plus mr-2"></i> THÊM KHÁCH HÀNG
+            </button>
+        </div>
+        <!-- Modal Thêm Khách Hàng -->
+        <div id="addCustomerModal"
+             class="hidden fixed inset-0 flex justify-center items-center bg-gray-900 bg-opacity-50 z-50">
+            <div class="bg-white p-6 rounded-lg shadow-2xl w-[400px] relative z-50">
+                <h2 class="text-xl font-semibold mb-4 text-center">Thêm Khách Hàng</h2>
+                <form th:action="@{/customers/add}" th:object="${newCustomer}" method="post"
+                      onsubmit="submitCustomerForm(event)">
+                    <div class="mb-3">
+                        <label class="block text-gray-700 font-medium">Tên khách hàng</label>
+                        <input type="text" class="border p-2 w-full rounded focus:outline-blue-500" th:field="*{name}">
+                        <span th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="text-red-500"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="block text-gray-700 font-medium">Số điện thoại</label>
+                        <input type="text" class="border p-2 w-full rounded focus:outline-blue-500" th:field="*{phone}">
+                        <span th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}" class="text-red-500"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="block text-gray-700 font-medium">Địa chỉ</label>
+                        <input type="text" class="border p-2 w-full rounded focus:outline-blue-500"
+                               th:field="*{address}">
+                        <span th:if="${#fields.hasErrors('address')}" th:errors="*{address}"
+                              class="text-red-500"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="block text-gray-700 font-medium">Email</label>
+                        <input type="email" class="border p-2 w-full rounded focus:outline-blue-500"
+                               th:field="*{email}">
+                        <span th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="text-red-500"></span>
+                    </div>
+
+                    <div class="flex justify-end mt-4 gap-3">
+                        <button type="button" class="bg-gray-400 text-white px-4 py-2 rounded"
+                                onclick="toggleModal('addCustomerModal')">Hủy
+                        </button>
+                        <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Lưu</button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+
+
+        <div th:each="customer : ${customers}">
+            <!-- Modal Chỉnh Sửa Khách Hàng -->
+            <div th:id="'editCustomerModal-' + ${customer.id}"
+                 class="hidden fixed inset-0 flex justify-center items-center bg-gray-900 bg-opacity-50 z-50">
+                <div class="bg-white p-6 rounded-lg shadow-2xl w-[400px] relative z-50">
+                    <h2 class="text-xl font-semibold mb-4 text-center">Chỉnh sửa khách hàng</h2>
+                    <form th:action="@{/customers/update}" method="post"
+                          th:id="'editForm-' + ${customer.id}"
+                          th:onsubmit="|submitUpdateForm(event, '${customer.id}')|">
+
+                        <input type="hidden" name="id" th:value="${customer.id}">
+                        <input type="hidden" name="page" th:value="${currentPage}"/>
+                        <input type="hidden" name="size" value="5"/>
+
+                        <div class="mb-3">
+                            <label class="block text-gray-700 font-medium">Tên khách hàng</label>
+                            <input type="text" class="border p-2 w-full rounded focus:outline-blue-500" name="name"
+                                   th:value="${customer.name}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="block text-gray-700 font-medium">Số điện thoại</label>
+                            <input type="text" class="border p-2 w-full rounded focus:outline-blue-500" name="phone"
+                                   th:value="${customer.phone}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="block text-gray-700 font-medium">Địa chỉ</label>
+                            <input type="text" class="border p-2 w-full rounded focus:outline-blue-500" name="address"
+                                   th:value="${customer.address}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="block text-gray-700 font-medium">Email</label>
+                            <input type="email" class="border p-2 w-full rounded focus:outline-blue-500" name="email"
+                                   th:value="${customer.email}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="block text-gray-700 font-medium">Dư nợ</label>
+                            <!-- Input thực sự để gửi lên server -->
+                            <input type="hidden" name="debtBalance" th:value="${customer.debtBalance}" />
+
+                            <!-- Hiển thị đẹp -->
+                            <input type="text"
+                                   class="border p-2 w-full rounded bg-gray-200 text-gray-700 cursor-not-allowed"
+                                   th:value="${#numbers.formatDecimal(customer.debtBalance, 0, 'COMMA', 0, 'POINT')} + ' đ'" readonly />
+
+                        </div>
+
+                        <div class="flex justify-end mt-4 gap-3">
+                            <button type="button"
+                                    class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500 transition"
+                                    th:onclick="|toggleModal('editCustomerModal-' + ${customer.id})|">Hủy
+                            </button>
+                            <button type="submit"
+                                    class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition">Cập
+                                nhật
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <a sec:authorize="hasRole('ROLE_OWNER')" href="/owner/history/customer">
+            <button class="bg-blue-500 text-white px-4 py-2 rounded flex items-center">
+                Lịch sử thay đổi
+            </button>
+        </a>
+        <p class="text-gray-600 mb-4">
+            Tổng cộng: <span th:text="${totalItems}"></span> bản ghi
+        </p>
+
+
+        <div class="relative overflow-x-auto">
+
+            <table class="table-auto border-collapse border w-full">
+                <thead class="bg-gray-100 sticky top-0 z-10">
+
+                <tr class="bg-gray-100">
+                    <th class="border p-2 relative w-[180px] ">Tên
+                        <div class="resizer"></div>
+                    </th>
+                    <th class="border p-2 relative ">Địa chỉ
+                        <div class="resizer"></div>
+                    </th>
+                    <th class="border p-2 relative ">SĐT
+                        <div class="resizer"></div>
+                    </th>
+                    <th class="border p-2 relative">Email
+                        <div class="resizer"></div>
+                    </th>
+                    <th class="border p-2 relative">Tổng nợ
+                        <div class="resizer"></div>
+                    </th>
+                    <th class="border p-2 relative">Ngày thêm
+                        <div class="resizer"></div>
+                    </th>
+                    <th class="border p-2 relative">Ngày sửa
+                        <div class="resizer"></div>
+                    </th>
+
+
+                    <th class="border p-2 relative ">Hành động
+                        <div class="resizer"></div>
+                    </th>
+
+                </tr>
+
+                <form method="get" action="/customers">
+                    <tr class="bg-gray-50">
+                        <td class="border p-2"><input type="text" name="name" th:value="${name}"
+                                                      class="w-full border rounded p-1" placeholder="Tên"></td>
+                        <td class="border p-2"><input type="text" name="address" th:value="${address}"
+                                                      class="w-full border rounded p-1" placeholder="Địa chỉ"></td>
+                        <td class="border p-2"><input type="text" name="phone" th:value="${phone}"
+                                                      class="w-full border rounded p-1" placeholder="SĐT"></td>
+                        <td class="border p-2"><input type="text" name="email" th:value="${email}"
+                                                      class="w-full border rounded p-1" placeholder="Email"></td>
+                        <td class="border p-2"><input type="text" name="debt" th:value="${debt}"
+                                                      class="w-full border rounded p-1" placeholder="Dư nợ"></td>
+                        <td class="border p-2"><input type="date" name="createdDate" th:value="${createdDate}"
+                                                      class="w-full border rounded p-1"></td>
+                        <td class="border p-2"><input type="date" name="updatedDate" th:value="${updatedDate}"
+                                                      class="w-full border rounded p-1"></td>
+                        <td class="border p-2">
+                            <div class="flex gap-2 justify-center">
+                                <button type="submit" class="bg-blue-500 text-white px-4 py-1 rounded">Lọc</button>
+                                <a href="/customers" class="bg-gray-400 text-white px-4 py-1 rounded">Xóa</a>
+                            </div>
+                        </td>
+                    </tr>
+                </form>
+
+
+                </thead>
+
+                <tbody id="tableBody">
+                <tr th:each="customer : ${customers}">
+                    <td class="border p-2" th:text="${customer.name}"></td>
+                    <td class="border p-2" th:text="${customer.address}"></td>
+                    <td class="border p-2" th:text="${customer.phone}"></td>
+                    <td class="border p-2" th:text="${customer.email}"></td>
+                    <td class="border p-2"
+                        th:text="${#numbers.formatDecimal(customer.debtBalance, 0, 'COMMA', 0, 'POINT')} + ' đ'">
+                    </td>
+                    <td class="border p-2" th:text="${#temporals.format(customer.createdAt, 'dd/MM/yyyy')}"></td>
+                    <td class="border p-2" th:text="${#temporals.format(customer.updatedAt, 'dd/MM/yyyy')}"></td>
+
+
+                    <td class="border p-2">
+                        <div class="flex gap-2 w-full">
+                            <button class="w-1/3 bg-blue-500 text-white px-2 py-1 rounded flex items-center justify-center toggle-btn
+                                    hover:bg-blue-700 hover:text-white transition duration-200"
+                                    data-full='<i class="fas fa-info mr-1"></i> Chi tiết'
+                                    data-icon='<i class="fas fa-info"></i>'
+                                    th:onclick="|window.location.href='@{/debt/detail(customerId=${customer.id})}'|">
+                                <i class="fas fa-info mr-1"></i>
+                            </button>
+
+                            <button class="w-1/3 bg-white border border-green-500 text-green-500 px-2 py-1 rounded flex items-center justify-center toggle-btn
+                                    hover:bg-green-500 hover:text-white transition duration-200"
+                                    data-full='<i class="fas fa-plus mr-1"></i> Thêm phiếu nợ'
+                                    data-icon='<i class="fas fa-plus"></i>'
+                                    th:onclick="|window.location.href='@{/debt/add(customerId=${customer.id})}'|">
+                                <i class="fas fa-plus mr-1"></i>
+                            </button>
+
+                            <button class="w-1/3 bg-yellow-300 text-black px-2 py-1 rounded flex items-center justify-center toggle-btn
+                                    hover:bg-yellow-500 hover:text-white transition duration-200"
+                                    data-full='<i class="fas fa-pencil-alt mr-1"></i> Sửa'
+                                    data-icon='<i class="fas fa-pencil-alt"></i>'
+                                    th:onclick="|toggleModal('editCustomerModal-' + ${customer.id})|">
+                                <i class="fas fa-pencil-alt mr-1"></i>
+                            </button>
+
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            <div class="w-full flex justify-center items-center mt-4 gap-2" th:if="${totalPages > 0}">
+                <!-- Nút Trước -->
+                <a th:if="${currentPage > 0}"
+                   th:href="@{/customers(page=${currentPage - 1}, size=5,
+                              name=${name}, phone=${phone},
+                             address=${address}, email=${email},
+                             debt=${debt}, createdDate=${createdDate}, updatedDate=${updatedDate})}"
+                   class="bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-400 hover:text-white transition duration-200">
+                    Trước
+                </a>
+
+                <!-- Các số trang -->
+                <th:block th:each="pageNumber : ${#numbers.sequence(0, totalPages - 1)}">
+                    <a th:href="@{/customers(page=${pageNumber}, size=5,
+                                name=${name}, phone=${phone},
+                                 address=${address}, email=${email},
+                                 debt=${debt}, createdDate=${createdDate}, updatedDate=${updatedDate})}"
+                       th:text="${pageNumber + 1}"
+                       th:classappend="${pageNumber == currentPage} ? 'bg-blue-500 text-white' : 'bg-gray-200 text-black hover:bg-gray-400 hover:text-white'"
+                       class="px-4 py-2 rounded transition duration-200">
+                    </a>
+                </th:block>
+
+                <!-- Nút Sau -->
+                <a th:if="${currentPage + 1 < totalPages}"
+                   th:href="@{/customers(page=${currentPage + 1}, size=5,
+                              name=${name}, phone=${phone},
+                             address=${address}, email=${email},
+                             debt=${debt}, createdDate=${createdDate}, updatedDate=${updatedDate})}"
+                   class="bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-400 hover:text-white transition duration-200">
+                    Sau
+                </a>
+            </div>
+
+
+        </div>
+
+    </div>
+    <div th:replace="~{fragments/noti :: noti}"></div>
+</div>
+<script>
+    function toggleModal(modalId) {
+        const modal = document.getElementById(modalId);
+        modal.classList.toggle("hidden");
+
+        // Tự động focus vào input đầu tiên khi mở modal
+        if (!modal.classList.contains("hidden")) {
+            const firstInput = modal.querySelector("input:not([type='hidden'])");
+            if (firstInput) firstInput.focus();
+        }
+    }
+
+    function autoHideToast(toastId, message, duration = 2000) {
+        const toast = document.getElementById(toastId);
+
+        if (toastId === "errorToast") {
+
+            let errorMessageHTML = "";
+            message.split("\n").forEach(msg => {
+                if (msg.trim() !== "") {
+                    errorMessageHTML += `<div class="mb-1">${msg}</div>`;
+                }
+            });
+
+            errorMessageHTML += "</ul>";
+            toast.innerHTML = errorMessageHTML;
+        } else {
+            toast.textContent = message;
+        }
+
+        toast.classList.add("show");
+        toast.classList.remove("hidden");
+
+        setTimeout(() => {
+            toast.classList.remove("show");
+            setTimeout(() => toast.classList.add("hidden"), 500);
+        }, duration);
+    }
+
+    async function submitCustomerForm(event) {
+        event.preventDefault();
+
+        const formData = new FormData(event.target);
+
+        const response = await fetch(event.target.action, {
+            method: event.target.method,
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            const errors = result.errorMessage
+                ? [result.errorMessage]
+                : Object.values(result);
+            autoHideToast("errorToast", errors.join("\n"));
+        } else {
+            localStorage.setItem("successMessage", result.message);
+            location.reload();
+        }
+    }
+
+    async function submitUpdateForm(event, customerId) {
+        event.preventDefault();
+
+        const formData = new FormData(event.target);
+
+        const response = await fetch(event.target.action, {
+            method: "POST",
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            const errors = result.errorMessage
+                ? [result.errorMessage]
+                : Object.values(result);
+            autoHideToast("errorToast", errors.join("\n"));
+        } else {
+            localStorage.setItem("successMessage", result.message);
+            toggleModal(`editCustomerModal-${customerId}`);
+            location.href = window.location.href;
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const successMessage = localStorage.getItem("successMessage");
+
+        if (successMessage) {
+            autoHideToast("successToast", successMessage);
+            localStorage.removeItem("successMessage");
+        }
+    });
+</script>
+
+<div th:replace="~{fragments/script :: script}"></div>
+
+
+</body>
+</html>

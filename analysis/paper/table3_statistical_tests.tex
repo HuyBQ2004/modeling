@@ -1,0 +1,15 @@
+\begin{table}[ht]
+\centering
+\caption{Statistical significance of prediction error. Normality assessed via Shapiro--Wilk; normal residuals use paired $t$-test, non-normal use Wilcoxon signed-rank. Significance level $\alpha = 0.05$.}
+\label{tab:stat_tests}
+\begin{tabular}{llrrl}
+\toprule
+\textbf{Comparison} & \textbf{Test} & \textbf{Stat} & $p$ & \textbf{Sig.} \\
+\midrule
+  Latency VT & Wilcoxon signed-rank & 17.00 & 0.5703 & -- \\
+  Latency PT & Wilcoxon signed-rank & 18.00 & 0.6523 & -- \\
+  Queue VT & Wilcoxon signed-rank & 0.00 & 0.0078 & \checkmark \\
+  Queue PT & Wilcoxon signed-rank & 0.00 & 0.0078 & \checkmark \\
+\bottomrule
+\end{tabular}
+\end{table}

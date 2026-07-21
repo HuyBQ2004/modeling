@@ -1,0 +1,131 @@
+<html xmlns:th="http://www.thymeleaf.org" lang="">
+
+<head>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+</head>
+<body class="bg-gray-100">
+<div th:fragment="header">
+    <header class="bg-white border-b border-gray-200">
+        <div class="container mx-auto flex justify-between items-center py-2 px-4">
+            <div class="flex items-center">
+                <span class="ml-2 text-xl font-bold text-blue-900">
+                    <span th:text="${store != null ? store.name : ''}"></span>
+                </span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <a class="text-gray-600 hover:text-gray-800 text-sm" href="#">
+                    <div class="relative" id="user-dropdown">
+                        <a class="text-gray-600 hover:text-gray-800" id="user-dropdown-toggle">
+                            <span class="text-gray-600 text-sm"
+                                  th:text="${user != null ? user.phone : ''}">
+                            </span>
+                            <i class="fas fa-user-circle"></i>
+                        </a>
+                        <div class="absolute hidden right-0 bg-white border border-gray-300 shadow-md mt-2 w-48"
+                             id="dropdown-menu">
+                            <a th:href="@{/profile}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Hồ
+                                sơ</a>
+                            <div th:if="${user != null && user.role == 'ROLE_OWNER'}">
+                                <a th:href="@{/owner/store}"
+                                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Thay
+                                    đổi cửa hàng</a>
+                            </div>
+                            <a class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <form action="#" th:action="@{/logout}" method="POST">
+                                    <input type="submit" class="btn btn-info" value="Đăng xuất"/>
+                                </form>
+                            </a>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </header>
+    <nav class="bg-blue-600">
+        <div class="container mx-auto flex justify-between items-center py-2 px-4">
+            <div class="flex space-x-4">
+                <div th:if="${user != null && user.role == 'ROLE_OWNER'}">
+                    <a class="flex items-center text-white px-3 py-2 rounded-md hover:bg-blue-700" th:href="@{/home}">
+                        <i class="fas fa-eye mr-2">
+                        </i>
+                        Tổng quan
+                    </a>
+                </div>
+                <div th:if="${user != null && user.role == 'ROLE_OWNER'}">
+                    <a class="flex items-center text-white px-3 py-2 rounded-md hover:bg-blue-700"
+                       th:href="@{/owner/products}">
+                        <i class="fas fa-box mr-2">
+                        </i>
+                        Sản phẩm
+                    </a>
+                </div>
+                <div th:if="${user != null && (user.role == 'ROLE_OWNER' || user.role == 'ROLE_EMPLOYEE')}">
+                    <a class="flex items-center text-white px-3 py-2 rounded-md hover:bg-blue-700"
+                       th:href="@{/zones}">
+                        <i class="fas fa-warehouse mr-2"></i>
+                        Kho hàng
+                    </a>
+                </div>
+                <div th:if="${user != null && (user.role == 'ROLE_OWNER' || user.role == 'ROLE_EMPLOYEE')}">
+                    <a class="flex items-center text-white px-3 py-2 rounded-md hover:bg-blue-700 transition "
+                       th:href="@{/customers}">
+                        <i class="fas fa-user mr-2"></i>
+                        Khách hàng
+                    </a>
+                </div>
+                <div th:if="${user != null && user.role == 'ROLE_ADMIN'}">
+                    <a class="flex items-center text-white px-3 py-2 rounded-md hover:bg-blue-700"
+                       th:href="@{/admin/manage-owner}">
+                        <i class="fas fa-users mr-2"></i>
+                        Chủ cửa hàng
+                    </a>
+                </div>
+                <div th:if="${user != null && user.role == 'ROLE_ADMIN'}">
+                    <a class="flex items-center text-white px-3 py-2 rounded-md hover:bg-blue-700"
+                       th:href="@{/admin/manage-store}">
+                        <i class="fas fa-store mr-2"></i>
+                        Cửa hàng
+                    </a>
+                </div>
+                <div th:if="${user != null && user.role == 'ROLE_OWNER'}">
+                    <a th:name="employee" class="flex items-center text-white px-3 py-2 rounded-md hover:bg-blue-700"
+                       th:href="@{/owner/employees}">
+                        <i class="fas fa-users mr-2">
+                        </i>
+                        Nhân viên
+                    </a>
+                </div>
+                <div th:if="${user != null && user.role == 'ROLE_OWNER'}">
+                    <a class="flex items-center text-white px-3 py-2 rounded-md hover:bg-blue-700"
+                       th:href="@{/owner/zone}">
+                        <i class="fas fa-warehouse mr-2"></i>
+                        Khu vực
+                    </a>
+                </div>
+                <div th:if="${user != null && (user.role == 'ROLE_OWNER' || user.role == 'ROLE_EMPLOYEE')}">
+                    <a class="flex items-center text-white px-3 py-2 rounded-md hover:bg-blue-700 transition "
+                       th:href="@{/invoiceSale}">
+                        <i class="fas fa-calendar mr-2"></i>
+                        Đơn hàng
+                    </a>
+                </div>
+                <div th:if="${user != null && user.role == 'ROLE_OWNER'}">
+                    <a class="flex items-center text-white px-3 py-2 rounded-md hover:bg-blue-700 transition "
+                       th:href="@{/owner/invoices}">
+                        <i class="fas fa-file-invoice mr-2"></i>
+                        Nhập hàng
+                    </a>
+                </div>
+            </div>
+            <div th:if="${user != null && (user.role == 'ROLE_OWNER' || user.role == 'ROLE_EMPLOYEE')}">
+                <a class="flex items-center text-white px-3 py-2 rounded-md bg-blue-700" th:href="@{/createOrder}">
+                    <i class="fas fa-shopping-basket mr-2">
+                    </i>
+                    Tạo đơn hàng
+                </a>
+            </div>
+        </div>
+    </nav>
+</div>
+</body>
+</html>

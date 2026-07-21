@@ -1,0 +1,100 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Page-1" id="QgclZPUDYaxA-nXWW4fn">
+    <mxGraphModel dx="774" dy="417" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="FiO_egERleMeDssTZSir-1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="&amp;nbsp;Blocking Request" vertex="1">
+          <mxGeometry height="60" width="120" x="303" y="83" as="geometry" />
+        </mxCell>
+        <mxCell id="FiO_egERleMeDssTZSir-2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;div&gt;Waiting Inventory&amp;nbsp; E[N]&amp;nbsp;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;(Little&#39;s Law invariant)&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="303" y="185" as="geometry" />
+        </mxCell>
+        <mxCell id="FiO_egERleMeDssTZSir-3" edge="1" parent="1" source="FiO_egERleMeDssTZSir-1" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="FiO_egERleMeDssTZSir-2" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="534" y="142" as="sourcePoint" />
+            <mxPoint x="584" y="92" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FiO_egERleMeDssTZSir-4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Platform Threads" vertex="1">
+          <mxGeometry height="60" width="120" x="115" y="305" as="geometry" />
+        </mxCell>
+        <mxCell id="FiO_egERleMeDssTZSir-5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Virtual Threads" vertex="1">
+          <mxGeometry height="60" width="120" x="458" y="305" as="geometry" />
+        </mxCell>
+        <mxCell id="FiO_egERleMeDssTZSir-6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;div&gt;&amp;nbsp;Blocking retains&lt;/div&gt;&lt;div&gt;&amp;nbsp;native OS thread&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="113" y="424" as="geometry" />
+        </mxCell>
+        <mxCell id="FiO_egERleMeDssTZSir-7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;div&gt;Blocking parks&lt;/div&gt;&lt;div&gt;&amp;nbsp;continuation&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="458" y="421" as="geometry" />
+        </mxCell>
+        <mxCell id="FiO_egERleMeDssTZSir-8" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="FiO_egERleMeDssTZSir-6" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="173" y="364" as="sourcePoint" />
+            <mxPoint x="314" y="352" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FiO_egERleMeDssTZSir-9" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;div&gt;Resource Currency:&amp;nbsp;&lt;/div&gt;&lt;div&gt;&amp;nbsp;Native Thread&amp;nbsp;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;Occupancy&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="109" y="551" as="geometry" />
+        </mxCell>
+        <mxCell id="FiO_egERleMeDssTZSir-10" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;div&gt;&amp;nbsp;Resource Currency:&lt;/div&gt;&lt;div&gt;Heap Continuation&amp;nbsp;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;State&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="458" y="551" as="geometry" />
+        </mxCell>
+        <mxCell id="FiO_egERleMeDssTZSir-11" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;div&gt;Same queueing behaviour&lt;/div&gt;&lt;div&gt;Different physical realization&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="291" y="697" as="geometry" />
+        </mxCell>
+        <mxCell id="FiO_egERleMeDssTZSir-12" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Operating Region Analysis" vertex="1">
+          <mxGeometry height="60" width="120" x="291" y="824" as="geometry" />
+        </mxCell>
+        <mxCell id="FiO_egERleMeDssTZSir-13" edge="1" parent="1" source="FiO_egERleMeDssTZSir-2" style="endArrow=classic;html=1;rounded=0;exitX=0;exitY=1;exitDx=0;exitDy=0;entryX=0.614;entryY=0.006;entryDx=0;entryDy=0;entryPerimeter=0;" target="FiO_egERleMeDssTZSir-4" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="313" y="373" as="sourcePoint" />
+            <mxPoint x="207" y="299" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FiO_egERleMeDssTZSir-14" edge="1" parent="1" source="FiO_egERleMeDssTZSir-2" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.925;exitY=0.972;exitDx=0;exitDy=0;exitPerimeter=0;" target="FiO_egERleMeDssTZSir-5" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="380" y="312" as="sourcePoint" />
+            <mxPoint x="430" y="262" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FiO_egERleMeDssTZSir-15" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;entryX=0.444;entryY=0.028;entryDx=0;entryDy=0;entryPerimeter=0;" target="FiO_egERleMeDssTZSir-7" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="511" y="366" as="sourcePoint" />
+            <mxPoint x="674" y="359" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FiO_egERleMeDssTZSir-17" edge="1" parent="1" source="FiO_egERleMeDssTZSir-6" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.467;exitY=0.967;exitDx=0;exitDy=0;exitPerimeter=0;" target="FiO_egERleMeDssTZSir-9" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="173" y="484" as="sourcePoint" />
+            <mxPoint x="351" y="498" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FiO_egERleMeDssTZSir-18" edge="1" parent="1" source="FiO_egERleMeDssTZSir-7" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="FiO_egERleMeDssTZSir-10" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="628" y="519" as="sourcePoint" />
+            <mxPoint x="678" y="469" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FiO_egERleMeDssTZSir-19" edge="1" parent="1" source="FiO_egERleMeDssTZSir-9" style="endArrow=classic;html=1;rounded=0;entryX=0.058;entryY=0.017;entryDx=0;entryDy=0;entryPerimeter=0;exitX=0.942;exitY=0.972;exitDx=0;exitDy=0;exitPerimeter=0;" target="FiO_egERleMeDssTZSir-11" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="159" y="703" as="sourcePoint" />
+            <mxPoint x="209" y="653" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FiO_egERleMeDssTZSir-20" edge="1" parent="1" source="FiO_egERleMeDssTZSir-10" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.914;entryY=0.039;entryDx=0;entryDy=0;entryPerimeter=0;" target="FiO_egERleMeDssTZSir-11" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="512" y="698" as="sourcePoint" />
+            <mxPoint x="411" y="697" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FiO_egERleMeDssTZSir-22" edge="1" parent="1" source="FiO_egERleMeDssTZSir-11" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="FiO_egERleMeDssTZSir-12" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="511" y="790" as="sourcePoint" />
+            <mxPoint x="561" y="740" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

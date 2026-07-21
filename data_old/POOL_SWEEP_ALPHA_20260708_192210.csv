@@ -1,0 +1,3 @@
+Pool_Size,Mean_Heap_MB,Baseline_Heap_MB,Delta_Heap_MB,Est_NQueue,NQueue_Source,Alpha_MB_per_continuation,Linearity_Note
+10,1107.17,54,1053.17,9995.34,MODEL_ESTIMATED,0.1054,insufficient data
+25,1184.00,54,1130.00,9993.05,MODEL_ESTIMATED,0.1131,APPROXIMATELY LINEAR (deviation < 15%)

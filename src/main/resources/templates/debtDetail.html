@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Example</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+  <!-- Thêm Flatpickr CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+</head>
+<body class="bg-gray-100 p-4">
+
+
+<div class="w-full">
+
+  <div class="fixed top-0 left-0 w-full">
+    <div th:replace="~{fragments/header :: header}"></div>
+  </div>
+
+  <div class="mt-28">
+    <div class="w-[90%] mx-auto bg-white p-6 rounded-lg shadow-md mt-12">
+
+      <div class="flex justify-between items-center mb-4">
+        <h1 class="text-2xl font-semibold" th:text="${customer.name}"></h1>
+        <button  class="bg-blue-500 text-white px-4 py-2 rounded flex items-center"
+                 th:onclick="|window.location.href='@{/debt/add(customerId=${customer.id})}'|">
+          <i class="fas fa-plus mr-2"></i> THÊM PHIẾU NỢ
+        </button>
+      </div>
+
+      <p class="text-gray-600 mb-4">
+        Tổng cộng: <span th:text="${totalItems}"></span> bản ghi
+      </p>
+
+
+      <div class="relative overflow-x-auto max-h-[500px]">
+        <table class="table-auto border-collapse border w-full">
+          <thead class="bg-gray-100 sticky top-0 z-10" id="tableHeader">
+
+          <tr class="bg-gray-100">
+            <th class="border p-2 relative">Id
+              <div class="resizer"></div>
+            </th>
+            <th class="border p-2 relative">Ghi chú
+              <div class="resizer"></div>
+            </th>
+            <th class="border p-2 relative">Loại nợ
+              <div class="resizer"></div>
+            </th>
+            <th class="border p-2 relative">Số tiền
+              <div class="resizer"></div>
+            </th>
+            <th class="border p-2 relative">Ngày lập phiếu
+              <div class="resizer"></div>
+            </th>
+            <th class="border p-2 relative">Ngày tạo
+              <div class="resizer"></div>
+            </th>
+            <th class="border p-2 relative">Hành động
+              <div class="resizer"></div>
+            </th>
+          </tr>
+          <tr class="bg-gray-50">
+            <th class="border p-2">
+              <div class="flex w-full gap-1">
+                <input type="number" class="border rounded w-1/2 py-1 px-2" placeholder="Từ" id="search-id-min1"  th:value="${idMin}">
+                <input type="number" class="border rounded w-1/2 py-1 px-2" placeholder="Đến" id="search-id-max1"  th:value="${idMax}">
+              </div>
+            </th>
+            <td class="border p-2">
+              <input type="text" class="w-full border rounded p-1" id="search-note" th:value="${note}">
+            </td>
+            <td class="border p-2">
+              <select class="border rounded p-1 w-full" id="search-type" oninput="filterDebts()">
+                <option value="" th:selected="${type == null or type == ''}">Tất cả</option>
+                <option value="Customer_debt_shop" th:selected="${type == 'Customer_debt_shop'}">Khách hàng nợ cửa hàng</option>
+                <option value="Customer_return_shop" th:selected="${type == 'Customer_return_shop'}">Khách hàng trả cửa hàng</option>
+                <option value="Shop_debt_customer" th:selected="${type == 'Shop_debt_customer'}">Cửa hàng nợ khách hàng</option>
+                <option value="Shop_return_customer" th:selected="${type == 'Shop_return_customer'}">Cửa hàng trả khách hàng</option>
+              </select>
+            </td>
+            <th class="border p-2">
+              <div class="flex w-full gap-1">
+                <input type="number" class="border rounded w-1/2 py-1 px-2" placeholder="Từ" id="search-debt-min1" th:value="${amountMin}">
+                <input type="number" class="border rounded w-1/2 py-1 px-2" placeholder="Đến" id="search-debt-max1"  th:value="${amountMax}">
+              </div>
+            </th>
+            <th class="border p-2">
+              <div class="flex w-full gap-1">
+                <input type="text" class="border rounded w-1/2 py-1 px-2 flatpickr" id="search-date-min2" placeholder="Từ" th:value="${dateMin2}" >
+                <input type="text" class="border rounded w-1/2 py-1 px-2 flatpickr" id="search-date-max2" placeholder="Đến" th:value="${dateMax2}" >
+              </div>
+            </th>
+            <th class="border p-2">
+              <div class="flex w-full gap-1">
+                <input type="text" class="border rounded w-1/2 py-1 px-2 flatpickr" id="search-date-min1" placeholder="Từ" th:value="${dateMin}">
+                <input type="text" class="border rounded w-1/2 py-1 px-2 flatpickr" id="search-date-max1" placeholder="Đến"  th:value="${dateMax}">
+              </div>
+            </th>
+            <td class="border p-3">
+              <div class="flex gap-2 w-full">
+                <button id="clearFilters" class="w-1/3 bg-white border border-red-500 text-red-500 px-2 py-1 rounded flex items-center justify-center toggle-btn hover:bg-red-500 hover:text-white transition duration-200" data-full='<i class="fas fa-times mr-1"></i> Bỏ lọc' data-icon='<i class="fas fa-times"></i>'>
+                  <i class="fas fa-times mr-1"></i> Bỏ lọc
+                </button>
+                <button onclick="filterDebts()" class="w-1/3 bg-white border border-blue-500 text-white-500 px-2 py-1 rounded flex items-center justify-center toggle-btn hover:bg-red-500 hover:text-white transition duration-200" data-full='<i class="fa fa-filter"></i> Lọc' data-icon='<i class="fa fa-filter"></i>'>
+                  <i class="fa fa-filter"></i> Lọc
+                </button>
+                <button id="toggleButtons" class="w-1/3 bg-white border border-blue-500 text-blue-500 px-2 py-1 rounded flex items-center justify-center toggle-btn hover:bg-blue-500 hover:text-white transition duration-200">
+                  <i class="fas fa-angle-right mr-1"></i> Thu gọn
+                </button>
+              </div>
+            </td>
+          </tr>
+          </thead>
+
+
+          <tbody id="tableBody">
+          <tr th:each="debt,x : ${debtRecords}">
+            <!--          <td class="border p-2" th:text="${x.index+1}"></td>-->
+            <td class="border p-2" th:text="${debt.id}"></td>
+            <td class="border p-2" th:text="${debt.note}"></td>
+            <td class="border p-2">
+              <span th:if="${debt.type.name() == 'Customer_debt_shop'}">Khách hàng nợ cửa hàng</span>
+              <span th:if="${debt.type.name() == 'Customer_return_shop'}">Khách hàng trả cửa hàng</span>
+              <span th:if="${debt.type.name() == 'Shop_debt_customer'}">Cửa hàng nợ khách hàng</span>
+              <span th:if="${debt.type.name() == 'Shop_return_customer'}">Cửa hàng trả khách hàng</span>
+            </td>
+            <td class="border p-2" th:text="${#numbers.formatDecimal(debt.amount, 0, 'COMMA', 0, 'POINT')} + ' đ'"></td>
+            <td class="border p-2" th:text="${#temporals.format(debt.createOn, 'dd/MM/yyyy HH:mm:ss')}"></td>
+            <td class="border p-2" th:text="${#temporals.format(debt.createdAt, 'dd/MM/yyyy HH:mm:ss')}"></td>
+            <td class="border p-2">
+              <button class="w-32 h-10 text-lg font-semibold bg-blue-500 text-white px-4 py-2 rounded flex items-center justify-center hover:bg-blue-700 transition duration-200"
+                      th:attr="onclick=|showDetail('${debt.id}','${customerName}','${customerPhone}', '${debt.note}', '${debt.type}', '${debt.amount}', '${#temporals.format(debt.createOn, 'dd/MM/yyyy HH:mm:ss')}')|"
+                      data-full='<i class="fas fa-info mr-1"></i> Chi tiết'
+                      data-icon='<i class="fas fa-info"></i>'>
+                <i class="fas fa-info mr-1"></i> Chi tiết
+              </button>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="w-full flex justify-center items-center mt-4 gap-12">
+        <button id="prevPage" th:disabled="${currentPage == 0}"
+                th:class="${currentPage == 0 ? 'bg-gray-200 text-black px-8 py-2 rounded' : 'bg-gray-200 text-black px-8 py-2 rounded hover:bg-gray-400 hover:text-white transition duration-200'}"
+                th:text="Trước"
+                th:onclick="|window.location.href='/debt/detail?customerId=' + ${customer.id} + '&page=' + ${currentPage - 1} + '&size=' + ${recordsPerPage}|">
+        </button>
+
+        <div class="flex items-center">
+          <span>Trang</span>
+          <input type="text" id="currentPage" class="w-12 border rounded px-2 py-1 mx-2 text-center" value="1"
+                 th:value="${currentPage + 1}">
+          <span id="totalPages" th:text="'/ ' + ${totalPages}"></span>
+        </div>
+
+        <select id="recordsPerPage" class="border rounded px-4 py-2"
+                th:onchange="|window.location.href='/debt/detail?page=0&size=' + this.value + '&customerId=' + ${customer.id}|">
+          <option value="10" th:selected="${recordsPerPage == 10}">10 Bản Ghi</option>
+          <option value="20" th:selected="${recordsPerPage == 20}">20 Bản Ghi</option>
+          <option value="50" th:selected="${recordsPerPage == 50}">50 Bản Ghi</option>
+        </select>
+
+        <button id="nextPage" th:disabled="${currentPage + 1 >= totalPages}"
+                th:class="${currentPage + 1 >= totalPages ? 'bg-gray-200 text-black px-8 py-2 rounded' : 'bg-gray-200 text-black px-8 py-2 rounded hover:bg-gray-400 hover:text-white transition duration-200'}"
+                th:text="Sau"
+                th:onclick="|window.location.href='/debt/detail?customerId=' + ${customer.id} + '&page=' + ${currentPage + 1} + '&size=' + ${recordsPerPage}|">
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+</div>
+<!-- Modal Chi Tiết -->
+<div id="detailModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
+  <div class="p-4 bg-white rounded-lg shadow-md w-80">
+    <h2 class="text-center text-lg font-bold mb-2">Chi tiết Phiếu Nợ</h2>
+
+    <div class="space-y-2">
+      <div>
+        <label class="text-sm font-semibold">ID:</label>
+        <input type="text" id="detailId" class="border p-1 w-full text-sm" readonly>
+      </div>
+      <div>
+        <label class="text-sm font-semibold">Tên khách hàng:</label>
+        <input type="text" id="detailName" class="border p-1 w-full text-sm" readonly>
+      </div>
+      <div>
+        <label class="text-sm font-semibold">Số điện thoại:</label>
+        <input type="text" id="detailPhone" class="border p-1 w-full text-sm" readonly>
+      </div>
+      <div>
+        <label class="text-sm font-semibold">Ghi chú:</label>
+        <input type="text" id="detailNote" class="border p-1 w-full text-sm" readonly>
+      </div>
+
+      <div>
+        <label class="text-sm font-semibold">Loại nợ:</label>
+        <input type="text" id="detailType" class="border p-1 w-full text-sm" readonly>
+      </div>
+
+      <div>
+        <label class="text-sm font-semibold">Số tiền:</label>
+        <input type="text" id="detailAmount" class="border p-1 w-full text-sm" readonly>
+      </div>
+
+      <div>
+        <label class="text-sm font-semibold">Ngày lập phiếu:</label>
+        <input type="text" id="detailDate" class="border p-1 w-full text-sm" readonly>
+      </div>
+    </div>
+
+    <button onclick="closeModal()" class="mt-3 w-full p-2 bg-red-500 text-white text-sm rounded">Đóng</button>
+  </div>
+  <div th:replace="~{fragments/noti :: noti}"></div>
+</div>
+<div th:replace="~{fragments/script :: script}"></div>
+<script th:inline="javascript">
+  var customerId = [[${customer.id}]];
+</script>
+<script>
+  function showDetail(id, customerName , customerPhone ,note, type, amount, date) {
+    document.querySelector("thead").style.zIndex = "0";
+    document.getElementById("detailModal").style.display = "flex";
+
+    // Ánh xạ loại nợ sang tiếng Việt
+    var typeMap = {
+      "Customer_debt_shop": "Khách hàng nợ cửa hàng",
+      "Customer_return_shop": "Khách hàng trả cửa hàng",
+      "Shop_debt_customer": "Cửa hàng nợ khách hàng",
+      "Shop_return_customer": "Cửa hàng trả khách hàng"
+    };
+
+    document.getElementById("detailId").value = id;
+    document.getElementById("detailName").value = customerName;
+    document.getElementById("detailPhone").value = customerPhone;
+    document.getElementById("detailNote").value = note || "Không có ghi chú";
+    document.getElementById("detailType").value = typeMap[type] || "Không xác định"; // Dịch loại nợ
+    let formattedAmount = new Intl.NumberFormat('vi-VN', { minimumFractionDigits: 0 }).format(amount).replace(/\./g, ",") + " đ";
+    document.getElementById("detailAmount").value = formattedAmount;
+    document.getElementById("detailDate").value = date;
+  }
+
+  function closeModal() {
+    // Khôi phục z-index của thead khi đóng modal
+    document.querySelector("thead").style.zIndex = "2";
+
+    // Ẩn modal
+    document.getElementById("detailModal").style.display = "none";
+  }
+  document.getElementById('currentPage').addEventListener('keydown', function (event) {
+    if (event.key === 'Enter') {
+      let enteredPage = parseInt(this.value); // Lấy số trang người dùng nhập
+      let totalPagesElement = document.getElementById('totalPages');
+      if (totalPagesElement) {
+        let totalPages = parseInt(totalPagesElement.textContent.split('/')[1].trim()); // Lấy tổng số trang
+        if (isNaN(enteredPage) || enteredPage < 1) {
+          enteredPage = 1; // Nếu nhập sai, mặc định về trang 1
+        } else if (enteredPage > totalPages) {
+          enteredPage = totalPages; // Nếu vượt quá, đặt bằng tổng số trang
+          this.value = totalPages;
+        }
+        let pageParam = enteredPage - 1; // Trang bắt đầu từ 0 trong URL
+        let size = document.getElementById('recordsPerPage').value; // Lấy số bản ghi mỗi trang
+        window.location.href = '/debt/detail?customerId=' + customerId + '&page=' + pageParam + '&size=' + size; // Chuyển hướng
+      }
+    }
+  });
+  function filterDebts() {
+    var idMin = document.getElementById('search-id-min1').value;
+    var idMax = document.getElementById('search-id-max1').value;
+    var note = document.getElementById('search-note').value;
+    var type = document.getElementById('search-type').value;
+    var amountMin = document.getElementById('search-debt-min1').value;
+    var amountMax = document.getElementById('search-debt-max1').value;
+    var dateMin = document.getElementById('search-date-min1').value;
+    var dateMax = document.getElementById('search-date-max1').value;
+    var dateMin2 = document.getElementById('search-date-min2').value;
+    var dateMax2 = document.getElementById('search-date-max2').value;
+
+    var url = '/debt/detail?customerId=' + customerId + '&page=0&size=' + document.getElementById('recordsPerPage').value;
+    if (idMin) url += '&idMin=' + idMin;
+    if (idMax) url += '&idMax=' + idMax;
+    if (note) url += '&note=' + encodeURIComponent(note); // Sửa từ ¬e= thành &note=
+    if (type) url += '&type=' + type;
+    if (amountMin) url += '&amountMin=' + amountMin;
+    if (amountMax) url += '&amountMax=' + amountMax;
+    if (dateMin) url += '&dateMin=' + encodeURIComponent(dateMin);
+    if (dateMax) url += '&dateMax=' + encodeURIComponent(dateMax);
+    if (dateMin2) url += '&dateMin2=' + encodeURIComponent(dateMin2);
+    if (dateMax2) url += '&dateMax2=' + encodeURIComponent(dateMax2);
+
+    window.location.href = url;
+  }
+  function buildFilterParams() {
+    var params = '';
+    var idMin = document.getElementById('search-id-min1').value;
+    if (idMin) params += '&idMin=' + idMin;
+    var idMax = document.getElementById('search-id-max1').value;
+    if (idMax) params += '&idMax=' + idMax;
+    var note = document.getElementById('search-note').value;
+    if (note) params += '&note=' + encodeURIComponent(note); // Fixed: Changed ¬e to note
+    var type = document.getElementById('search-type').value;
+    if (type) params += '&type=' + type;
+    var amountMin = document.getElementById('search-debt-min1').value;
+    if (amountMin) params += '&amountMin=' + amountMin;
+    var amountMax = document.getElementById('search-debt-max1').value;
+    if (amountMax) params += '&amountMax=' + amountMax;
+    var dateMin = document.getElementById('search-date-min1').value;
+    if (dateMin) params += '&dateMin=' + encodeURIComponent(dateMin);
+    var dateMax = document.getElementById('search-date-max1').value;
+    if (dateMax) params += '&dateMax=' + encodeURIComponent(dateMax);
+    return params;
+    var dateMin2 = document.getElementById('search-date-min2').value;
+    if (dateMin2) params += '&dateMin2=' + encodeURIComponent(dateMin2);
+    return params;
+    var dateMax2 = document.getElementById('search-date-max2').value;
+    if (dateMax2) params += '&dateMax2=' + encodeURIComponent(dateMax2);
+    return params;
+  }
+  document.getElementById('clearFilters').addEventListener('click', function() {
+    document.getElementById('search-id-min1').value = '';
+    document.getElementById('search-id-max1').value = '';
+    document.getElementById('search-note').value = '';
+    document.getElementById('search-type').value = '';
+    document.getElementById('search-debt-min1').value = '';
+    document.getElementById('search-debt-max1').value = '';
+    document.getElementById('search-date-min1').value = '';
+    document.getElementById('search-date-max1').value = '';
+    document.getElementById('search-date-min2').value = '';
+    document.getElementById('search-date-max2').value = '';
+    var url = '/debt/detail?customerId=' + customerId + '&page=0&size=' + document.getElementById('recordsPerPage').value;
+    window.location.href = url;
+  });
+</script>
+</body>
+</html>

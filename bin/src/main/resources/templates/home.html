@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Trang chủ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+</head>
+<body class="bg-gray-50">
+
+<!-- Header -->
+<div th:replace="~{fragments/header :: header}"></div>
+
+<!-- Kết quả bán hàng hôm nay -->
+<div class="container mx-auto mt-6">
+    <h1 class="text-2xl font-bold mb-4">Kết quả bán hàng hôm nay</h1>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-white shadow p-4 rounded border-l-4 border-blue-500">
+            <p class="text-sm text-gray-500">Hóa đơn hôm nay</p>
+            <h2 class="text-2xl font-bold text-blue-600" th:text="${todayInvoiceCount}">0</h2>
+        </div>
+        <div class="bg-white shadow p-4 rounded border-l-4 border-green-500">
+            <p class="text-sm text-gray-500">Doanh thu hôm nay</p>
+            <h2 class="text-2xl font-bold text-green-600"
+                th:text="${#numbers.formatDecimal(todayRevenue, 0, 'COMMA', 0, 'POINT') + ' đ'}">0 đ</h2>
+        </div>
+    </div>
+</div>
+
+<!-- Biểu đồ doanh thu -->
+<div class="container mx-auto mt-10 bg-white shadow rounded-lg p-6">
+    <h2 class="text-xl font-semibold mb-4">Doanh thu thuần</h2>
+
+    <div class="flex space-x-4 mb-4">
+        <button class="tab-btn text-blue-600 font-semibold border-b-2 border-blue-600" data-mode="weekday">Theo thứ
+        </button>
+        <button class="tab-btn text-gray-600" data-mode="month">Theo tháng</button>
+    </div>
+
+    <canvas id="salesChart" style="max-height: 350px;"></canvas>
+</div>
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const revenueLabelsByWeekday = /*[[${revenueWeekdayLabels}]]*/ [];
+    const revenueDataByWeekday = /*[[${revenueWeekdayValues}]]*/ [];
+    const revenueLabelsByMonth = /*[[${revenueMonthLabels}]]*/ [];
+    const revenueDataByMonth = /*[[${revenueMonthValues}]]*/ [];
+
+    const ctx = document.getElementById('salesChart').getContext('2d');
+    const chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: revenueLabelsByWeekday,
+            datasets: [{
+                label: 'Doanh thu (VNĐ)',
+                data: revenueDataByWeekday,
+                backgroundColor: '#3B82F6',
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function (value) {
+                            return value.toLocaleString('vi-VN') + ' đ';
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+        btn.addEventListener("click", function () {
+            document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("border-b-2", "text-blue-600"));
+            btn.classList.add("border-b-2", "text-blue-600");
+            const mode = btn.dataset.mode;
+
+            let labels = [], data = [];
+            if (mode === "weekday") {
+                labels = revenueLabelsByWeekday;
+                data = revenueDataByWeekday;
+            } else if (mode === "month") {
+                labels = revenueLabelsByMonth;
+                data = revenueDataByMonth;
+            }
+
+            chart.data.labels = labels;
+            chart.data.datasets[0].data = data;
+            chart.update();
+        });
+    });
+    /*]]>*/
+</script>
+
+<!-- Footer / Scripts -->
+<div th:replace="~{fragments/script :: script}"></div>
+</body>
+</html>

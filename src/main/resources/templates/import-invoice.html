@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giao diện Hóa Đơn</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+    <style>
+        #errorModal {
+            z-index: 1000; /* Đảm bảo modal luôn ở trên cùng */
+        }
+
+        #errorModal .bg-white {
+            z-index: 1001; /* Hộp thông báo bên trong modal */
+        }
+
+        .bg-gray-900.bg-opacity-50 {
+            z-index: 999;
+        }
+
+        #errorToast {
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+            opacity: 0;
+            transform: translateX(100px);
+            max-width: 300px;
+        }
+
+        #errorToast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        #errorToast ul {
+            list-style-type: disc;
+            padding-left: 1rem;
+            margin: 0;
+        }
+
+        #errorToast li {
+            font-weight: 500;
+            color: #fff;
+            margin-bottom: 4px; /* Tạo khoảng cách giữa các lỗi */
+        }
+
+        #successToast {
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+            opacity: 0;
+            transform: translateX(100px);
+            max-width: 300px;
+        }
+
+        #successToast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+<div th:replace="~{fragments/header :: header}"></div><br><br>
+<div th:if="${errorMessage}" class="bg-red-500 text-white px-4 py-2 rounded mb-4">
+    <span th:text="${errorMessage}"></span>
+</div>
+<div id="errorToast"
+     class="hidden fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded shadow-lg transition-opacity duration-500">
+</div>
+<div id="successToast"
+     class="hidden fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg transition-opacity duration-500">
+</div>
+<div class="max-w-screen-lg mx-auto p-6 bg-white shadow-lg rounded-lg">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-semibold text-gray-800">Hóa Đơn Nhập Kho</h1>
+        </div>
+        <div class="flex justify-between items-center mb-6">
+            <button onclick="toggleModal('addCustomerModal')"
+                    class="bg-blue-500 text-white px-4 py-2 rounded flex items-center">
+                <i class="fas fa-plus mr-2"></i> THÊM KHÁCH HÀNG
+            </button>
+        </div>
+    <!-- Modal Thêm Khách Hàng -->
+    <div id="addCustomerModal"
+         class="hidden fixed inset-0 flex justify-center items-center bg-gray-900 bg-opacity-50 z-50">
+        <div class="bg-white p-6 rounded-lg shadow-2xl w-[400px] relative z-50">
+            <h2 class="text-xl font-semibold mb-4 text-center">Thêm Khách Hàng</h2>
+            <form th:action="@{/owner/invoices/import/add}" th:object="${newCustomer}" method="post"
+                  onsubmit="submitCustomerForm(event)">
+                <div class="mb-3">
+                    <label class="block text-gray-700 font-medium">Tên khách hàng</label>
+                    <input type="text" class="border p-2 w-full rounded focus:outline-blue-500" th:field="*{name}">
+                    <span th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="text-red-500"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="block text-gray-700 font-medium">Số điện thoại</label>
+                    <input type="text" class="border p-2 w-full rounded focus:outline-blue-500" th:field="*{phone}">
+                    <span th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}" class="text-red-500"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="block text-gray-700 font-medium">Địa chỉ</label>
+                    <input type="text" class="border p-2 w-full rounded focus:outline-blue-500"
+                           th:field="*{address}">
+                    <span th:if="${#fields.hasErrors('address')}" th:errors="*{address}"
+                          class="text-red-500"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="block text-gray-700 font-medium">Email</label>
+                    <input type="email" class="border p-2 w-full rounded focus:outline-blue-500"
+                           th:field="*{email}">
+                    <span th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="text-red-500"></span>
+                </div>
+
+                <div class="flex justify-end mt-4 gap-3">
+                    <button type="button" class="bg-gray-400 text-white px-4 py-2 rounded"
+                            onclick="toggleModal('addCustomerModal')">Hủy
+                    </button>
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Lưu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <form id="invoiceForm" th:action="@{/owner/invoices/import}" method="post">
+        <input type="hidden" name="storeId" th:value="${store.id}">
+        <div class="grid grid-cols-1 lg:grid-cols-10 gap-6">
+            <div class="lg:col-span-7 bg-gray-100 p-6 rounded-lg shadow-md hover:shadow-xl transition duration-300">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800">Danh Sách Sản Phẩm</h2>
+                <div class="relative mb-4">
+                    <input type="text" id="productSearch" class="w-full p-2 border rounded" placeholder="Tìm kiếm sản phẩm..." th:attr="data-url=@{/owner/invoices/search-products}">
+                    <div id="productResults" class="hidden absolute z-10 bg-white border mt-1 w-full max-h-40 overflow-auto"></div>
+                </div>
+                <table class="w-full table-auto text-gray-700">
+                    <thead class="bg-gray-200 text-sm">
+                    <tr>
+                        <th class="py-2 px-4">Tên sản phẩm</th>
+                        <th class="py-2 px-4">Số lượng</th>
+                        <th class="py-2 px-4">Giá nhập</th>
+                        <th class="py-2 px-4">Khu vực</th>
+                        <th class="py-2 px-4">Thành tiền</th>
+                        <th class="py-2 px-4">Thao tác</th>
+                    </tr>
+                    </thead>
+                    <tbody id="productList">
+                    <!-- Các hàng sản phẩm sẽ được thêm vào đây -->
+                    </tbody>
+                </table>
+                <div class="mt-6 grid grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-gray-700">Chọn phương thức:
+                            <select name="paymentMethod" id="paymentMethod" class="w-full bg-gray-50 text-black border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                                <option value="">Chọn phương thức thanh toán</option>
+                                <option value="onlyProduct">Tiền Hàng</option>
+                                <option value="productAndDebt">Tiền Hàng + Nợ</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Tổng tiền:
+                            <input type="text" name="totalPrice" class="w-full bg-gray-50 text-black border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" readonly>
+                        </label>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Thanh toán:
+                            <input type="text" name="paidAmount" class="w-full bg-gray-50 text-black border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        </label>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Còn nợ:
+                            <input type="text" name="remainingAmount" class="w-full bg-gray-50 text-black border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" readonly>
+                        </label>
+                    </div>
+                </div>
+                <div class="mt-6">
+                    <label class="block text-gray-700">Ghi chú:
+                        <textarea name="note" class="mt-1 w-full bg-gray-50 text-black border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" rows="4"></textarea>
+                    </label>
+                </div>
+            </div>
+            <div class="lg:col-span-3 bg-gray-100 p-6 rounded-lg shadow-md hover:shadow-xl transition duration-300">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800">Thông Tin Khách Hàng</h2>
+                <div class="mb-4">
+                    <label>Số điện thoại:
+                        <input type="text" id="customerPhone" name="customerPhone" class="w-full p-2 border rounded" th:attr="data-url=@{/owner/invoices/search-customer}" placeholder="Nhập số điện thoại khách hàng">
+                    </label>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700">Tên khách hàng:
+                        <input type="text" name="customerName" id="customerName" class="w-full bg-gray-50 text-black border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Nhập tên khách hàng" th:disabled>
+                    </label>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700">Địa chỉ khách hàng:
+                        <input type="text" name="customerAddress" id="customerAddress" class="w-full bg-gray-50 text-black border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Nhập địa chỉ khách hàng" th:disabled>
+                    </label>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700">Số dư khách hàng:
+                        <input type="text" name="customerBalance" id="customerBalance" class="w-full bg-gray-50 text-black border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Nhập số dư khách hàng" th:disabled>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div>
+            <input type="submit" value="Lưu hóa đơn" class="mt-6 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-200">
+        </div>
+        <div>
+            <button type="button" class="mt-6 bg-red-500 text-white px-4 py-2 rounded-lg" th:onclick="|window.location.href='@{/owner/invoices}'|">Quay Lại</button>
+        </div>
+    </form>
+    <div th:replace="~{fragments/noti :: noti}"></div>
+</div>
+
+<script>
+    let productIndex = 0;
+    let zones = [];
+
+    $(document).ready(function() {
+        const storeId = $('[name="storeId"]').val();
+        $.ajax({
+            url: `/owner/invoices/search-zones?storeId=${storeId}`,
+            method: 'GET',
+            success: function(data) {
+                zones = data;
+                console.log('Danh sách khu vực:', zones); // In danh sách khu vực ra console
+            },
+            error: function() {
+                console.error('Lỗi khi lấy danh sách khu vực');
+            }
+        });
+
+        $('#productSearch').on('input', function(e) {
+            const query = e.target.value;
+            if (query.length < 2) {
+                $('#productResults').addClass('hidden');
+                return;
+            }
+
+            $.ajax({
+                url: $('#productSearch').data('url'),
+                method: 'GET',
+                data: { query: query },
+                success: function(products) {
+                    console.log('Dữ liệu từ server:', products); // Kiểm tra dữ liệu
+                    let resultsHtml = '';
+                    if (products && products.length > 0) {
+                        products.forEach(function(product) {
+                            resultsHtml += `
+                <div class="p-2 hover:bg-gray-100 cursor-pointer"
+                     data-id="${product.id}"
+                     data-name="${product.name}"
+                     data-price="${product.unitPrice}"
+                     onclick="addProduct(this)">
+                    ${product.name}
+                </div>
+            `;
+                        });
+                    } else {
+                        resultsHtml = '<div class="p-2 text-gray-500">Không tìm thấy sản phẩm</div>';
+                    }
+                    $('#productResults').html(resultsHtml);
+                    $('#productResults').removeClass('hidden');
+                }
+            });
+        });
+
+        $('#productList').on('input', '.zoneSearch', function(e) {
+            const query = e.target.value.trim().toLowerCase();
+            const row = $(this).closest('tr');
+            const $zoneResults = row.find('.zoneResults');
+
+            // Nếu không có gì được nhập, ẩn kết quả
+            if (query.length === 0) {
+                $zoneResults.addClass('hidden');
+                return;
+            }
+
+            // Lọc danh sách zones dựa trên tên
+            const filteredZones = zones.filter(zone =>
+                zone.name.toLowerCase().includes(query)
+            );
+
+            let resultsHtml = '';
+            if (filteredZones.length > 0) {
+                filteredZones.forEach(zone => {
+                    resultsHtml += `
+                <div class="p-2 hover:bg-gray-100 cursor-pointer"
+                     data-id="${zone.id}"
+                     data-name="${zone.name}"
+                     onclick="selectZone(this)">
+                    ${zone.name}
+                </div>
+            `;
+                });
+            } else {
+                resultsHtml = '<div class="p-2 text-gray-500">Không tìm thấy khu vực</div>';
+            }
+
+            $zoneResults.html(resultsHtml);
+            $zoneResults.removeClass('hidden');
+        });
+
+    });
+
+    function addProduct(element) {
+        const product = {
+            id: $(element).data('id'),
+            name: $(element).data('name'),
+            unitPrice: $(element).data('price')
+        };
+
+        const row = `
+            <tr data-id="${product.id}">
+                <td class="py-2 px-4">${product.name}
+                    <input type="hidden" name="details[${productIndex}].productId" value="${product.id}">
+                </td>
+                <td class="py-2 px-4">
+                    <input type="number" name="details[${productIndex}].quantity" class="quantity w-20 p-1 border rounded" >
+                </td>
+                <td class="py-2 px-4">
+                    <input type="number" name="details[${productIndex}].unitPrice" class="unitPrice w-24 p-1 border rounded" step="0.01" value="${product.unitPrice}"  >
+                </td>
+                <td class="py-2 px-4">
+                    <input type="text" class="zoneSearch w-full p-1 border rounded" placeholder="Tìm kiếm khu vực...">
+                    <div class="zoneResults hidden bg-white border mt-1 max-h-40 overflow-auto"></div>
+                    <input type="hidden" name="details[${productIndex}].zoneId" class="zoneId">
+                </td>
+                <td class="py-2 px-4 totalPrice">${product.totalPrice}</td>
+                <td class="py-2 px-4">
+                    <button type="button" class="bg-red-500 text-white px-4 py-2 rounded-lg" onclick="this.parentElement.parentElement.remove(); calculateTotal()">Xóa</button>
+                </td>
+            </tr>
+        `;
+
+        $('#productList').append(row);
+        $('#productResults').addClass('hidden');
+        calculateTotal();
+        productIndex++;
+    }
+
+    function selectZone(element) {
+        const zoneId = $(element).data('id');
+        const zoneName = $(element).data('name');
+        const row = $(element).closest('tr');
+
+        row.find('.zoneSearch').val(zoneName);
+        row.find('.zoneId').val(zoneId);
+        row.find('.zoneResults').addClass('hidden');
+    }
+
+    $('#customerPhone').on('change', function(e) {
+        const phone = e.target.value;
+        if (!phone) return;
+
+        $.ajax({
+            url: $('#customerPhone').data('url'),
+            method: 'GET',
+            data: { phone: phone },
+            success: function(customer) {
+                if (customer) {
+                    $('#customerName').val(customer.name || '');
+                    $('#customerAddress').val(customer.address || '');
+                    $('#customerBalance').val(customer.debtBalance || '0');
+                    calculateRemaining();
+                } else {
+                    $('#customerName').val('');
+                    $('#customerAddress').val('');
+                    $('#customerBalance').val('0');
+                }
+            },
+            error: function() {
+                console.error('Lỗi khi tìm kiếm khách hàng.');
+            }
+        });
+    });
+
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('quantity') || e.target.classList.contains('unitPrice')) {
+            const row = e.target.closest('tr');
+            const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
+            const unitPrice = parseFloat(row.querySelector('.unitPrice').value) || 0;
+            row.querySelector('.totalPrice').textContent = (quantity * unitPrice).toFixed(2);
+            calculateTotal();
+        }
+    });
+
+    $('#paymentMethod').on('change', function() {
+        const paymentMethod = this.value;
+        const total = parseFloat($('[name="totalPrice"]').val()) || 0;
+        const balance = parseFloat($('#customerBalance').val()) || 0;
+
+        if (paymentMethod === "onlyProduct") {
+            // Tiền Hàng: Thanh toán = tổng tiền, Còn nợ = số dư khách hàng
+            $('[name="paidAmount"]').val(total.toFixed(2));
+            $('[name="remainingAmount"]').val(balance.toFixed(2));
+        } else if (paymentMethod === "productAndDebt") {
+            // Tiền Hàng + Nợ: Thanh toán = tổng tiền + số dư khách hàng, Còn nợ = 0
+            const totalDue = total + balance;
+            $('[name="paidAmount"]').val(totalDue.toFixed(2));
+            $('[name="remainingAmount"]').val('0.00');
+        }
+    });
+
+    $('[name="paidAmount"]').on('input', function() {
+        const paymentMethod = $('#paymentMethod').val();
+        const balance = parseFloat($('#customerBalance').val()) || 0;
+
+        if (paymentMethod === "onlyProduct") {
+            // Tiền Hàng: Còn nợ luôn là số dư khách hàng
+            $('[name="remainingAmount"]').val(balance.toFixed(2));
+        } else if (paymentMethod === "productAndDebt") {
+            // Tiền Hàng + Nợ: Còn nợ luôn là 0
+            $('[name="remainingAmount"]').val('0.00');
+        }
+    });
+
+    function calculateTotal() {
+        let total = 0;
+        $('#productList tr').each(function() {
+            const quantity = parseFloat($(this).find('.quantity').val()) || 0;
+            const unitPrice = parseFloat($(this).find('.unitPrice').val()) || 0;
+            const totalPrice = quantity * unitPrice;
+            $(this).find('.totalPrice').text(totalPrice.toFixed(2));
+            total += totalPrice;
+        });
+        $('[name="totalPrice"]').val(total.toFixed(2));
+        // // Kích hoạt sự kiện change của paymentMethod để cập nhật lại
+        // $('#paymentMethod').trigger('change');
+        calculateRemaining();
+    }
+
+    function calculateRemaining() {
+        const total = parseFloat($('[name="totalPrice"]').val()) || 0;
+        const balance = parseFloat($('#customerBalance').val()) || 0;
+        const paidAmount = parseFloat($('[name="paidAmount"]').val()) || 0;
+        const paymentMethod = $('#paymentMethod').val();
+        let remaining;
+        if (paymentMethod === "productAndDebt") {
+            const totalDue = total + balance;
+            if (paidAmount < totalDue) {
+                remaining = totalDue - paidAmount; // Còn nợ nếu trả chưa đủ
+            } else {
+                remaining = paidAmount - totalDue; // Trả thừa, hiển thị số dư dương
+            }
+        } else {
+            if (paidAmount < total) {
+                remaining = total - paidAmount; // Còn nợ nếu trả chưa đủ tiền hàng
+            } else {
+                remaining = paidAmount - total; // Trả thừa, hiển thị số dư dương
+            }
+        }
+        $('[name="remainingAmount"]').val(remaining.toFixed(2));
+    }
+
+    function toggleModal(modalId) {
+        const modal = document.getElementById(modalId);
+        modal.classList.toggle("hidden");
+    }
+    async function submitCustomerForm(event) {
+        event.preventDefault();  // Ngăn form reload trang mặc định
+
+        let form = event.target;
+        let formData = new FormData(form);
+
+        let response = await fetch(form.action, {
+            method: form.method,
+            body: formData
+        });
+
+        let result = await response.json();
+        if (!response.ok) {
+            let errors = [];
+            if (result.errorMessage) {
+                errors.push(result.errorMessage);
+            } else {
+                for (const [field, message] of Object.entries(result)) {
+                    errors.push(message);
+                }
+            }
+            let errorMessage = errors.join("\n");  // Gộp lỗi thành danh sách
+            showErrorToast(errorMessage);
+        } else {
+            // Lưu thông báo vào localStorage trước khi reload
+            localStorage.setItem("successMessage", result.message);
+
+            // Reload trang ngay lập tức
+            location.reload();
+        }
+    }
+    document.addEventListener("DOMContentLoaded", function () {
+        let successMessage = localStorage.getItem("successMessage");
+        if (successMessage) {
+            showSuccessToast(successMessage);
+            // Xóa thông báo khỏi localStorage sau khi hiển thị để tránh lặp lại
+            localStorage.removeItem("successMessage");
+            // Ẩn thông báo sau 2 giây
+            setTimeout(() => {
+                document.getElementById("successToast").classList.remove("show");
+                setTimeout(() => document.getElementById("successToast").classList.add("hidden"), 500);
+            }, 2000);
+        }
+    });
+    function showErrorToast(message) {
+        let toast = document.getElementById("errorToast");
+
+        // Kiểm tra nếu message chứa nhiều lỗi, hiển thị dưới dạng danh sách
+        let errorMessageHTML = "<ul class='list-disc pl-4'>";
+        message.split("\n").forEach(msg => {
+            if (msg.trim() !== "") {
+                errorMessageHTML += `<li>${msg}</li>`;
+            }
+        });
+        errorMessageHTML += "</ul>";
+        toast.innerHTML = errorMessageHTML;
+        toast.classList.add("show");
+        toast.classList.remove("hidden");
+        // Sau 2 giây thì ẩn đi
+        setTimeout(() => {
+            toast.classList.remove("show");
+            setTimeout(() => toast.classList.add("hidden"), 500);
+        }, 2000);
+    }
+    function showSuccessToast(message) {
+        let toast = document.getElementById("successToast");
+        toast.textContent = message;
+        toast.classList.add("show");
+        toast.classList.remove("hidden");
+        // Ẩn sau 2 giây
+        setTimeout(() => {
+            toast.classList.remove("show");
+            setTimeout(() => toast.classList.add("hidden"), 500);
+        }, 2000);
+    }
+    async function submitUpdateForm(event, customerId) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+        const response = await fetch(form.action, {
+            method: "POST",
+            body: formData
+        });
+        const result = await response.json();
+        if (!response.ok) {
+            let errors = [];
+
+            if (result.errorMessage) {
+                errors.push(result.errorMessage);
+            } else {
+                for (const [field, message] of Object.entries(result)) {
+                    errors.push(message);
+                }
+            }
+            showErrorToast(errors.join("\n"));
+        } else {
+            localStorage.setItem("successMessage", result.message);
+
+            // Đóng modal
+            const modalId = `editCustomerModal-${customerId}`;
+            toggleModal(modalId);
+
+            // Reload đúng URL hiện tại (giữ lại page & filter)
+            location.href = window.location.href;
+        }
+    }
+</script>
+<div th:replace="~{fragments/script :: script}"></div>
+</body>
+</html>

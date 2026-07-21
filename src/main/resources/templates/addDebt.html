@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thêm Nợ</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+</head>
+<body class="bg-gray-100 p-6">
+<div th:replace="~{fragments/header :: header}"></div><br><br>
+<div class="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
+    <h1 class="text-2xl font-bold text-center mb-6">Thêm Nợ</h1>
+    <form th:action="@{/debt/add}" method="post" onsubmit="return validateForm()">
+        <div id="errorAlert" class="alert alert-danger" role="alert"></div>
+        <input type="hidden" name="customerId" th:value="${customer.id}">
+        <div class="mb-4">
+            <label for="debtorName" class="block text-sm font-medium text-gray-700">Tên người nợ:</label>
+            <input type="text" id="debtorName" name="debtorName" required class="mt-1 block w-full border border-gray-300 rounded-md p-2" th:value="${customer.name}" th:disabled="${customer.name}">
+        </div>
+        <div class="mb-4">
+            <label for="debtorNames" class="block text-sm font-medium text-gray-700">Số điện thoại:</label>
+            <input type="text" id="debtorNames" name="debtorphone" required class="mt-1 block w-full border border-gray-300 rounded-md p-2" th:value="${customer.phone}" th:disabled="${customer.phone}">
+        </div>
+        <div class="mb-4">
+            <label for="address" class="block text-sm font-medium text-gray-700">Địa chỉ:</label>
+            <input type="text" id="address" name="debtoraddress" required class="mt-1 block w-full border border-gray-300 rounded-md p-2" th:value="${customer.address}" th:disabled="${customer.address}">
+        </div>
+        <div class="mb-4">
+            <label for="email" class="block text-sm font-medium text-gray-700">Email:</label>
+            <input type="text" id="email" name="debtorEmail" required class="mt-1 block w-full border border-gray-300 rounded-md p-2" th:value="${customer.email}" th:disabled="${customer.email}">
+        </div>
+        <div class="mb-4">
+            <label for="amount" class="block text-sm font-medium text-gray-700">Số tiền:</label>
+            <input type="number" id="amount" name="amount" required class="mt-1 block w-full border border-gray-300 rounded-md p-2"
+               oninput="validateAmount()" >
+            <p id="amountError" class="text-red-500 hidden">Số tiền phải lớn hơn 0.</p>
+        </div>
+        <div class="mb-4">
+            <label for="type" class="block text-sm font-medium text-gray-700">Loại Công Nợ:</label>
+            <select name="type" id="type" class="mt-1 block w-full border border-gray-300 rounded-md p-2">
+                <option value="Customer_debt_shop">Khách hàng nợ cửa hàng</option>
+                <option value="Customer_return_shop">Khách hàng trả cửa hàng</option>
+                <option value="Shop_debt_customer">Cửa hàng nợ khách hàng</option>
+                <option value="Shop_return_customer">Cửa hàng trả khách hàng</option>
+            </select>
+        </div>
+        <div class="mb-4">
+            <label for="createOn" class="block text-sm font-medium text-gray-700">Ngày lập phiếu:</label>
+            <input type="text" id="createOn" name="createOn" required class="mt-1 block w-full border border-gray-300 rounded-md p-2">
+        </div>
+        <div class="mb-4">
+            <label for="note" class="block text-sm font-medium text-gray-700">Mô tả:</label>
+            <textarea id="note" name="note" rows="4" class="mt-1 block w-full border border-gray-300 rounded-md p-2"></textarea>
+        </div>
+        <button type="submit" class="w-full bg-blue-500 text-white font-bold py-2 rounded hover:bg-blue-600">Thêm Nợ</button><br><br>
+        <button type="button" class="w-full bg-red-500 text-white font-bold py-2 rounded hover:bg-red-600" th:onclick="|window.location.href='@{/debt/detail(customerId=${customer.id})}'|">Hủy</button>
+    </form>
+    <div th:replace="~{fragments/noti :: noti}"></div>
+</div>
+
+<div th:replace="~{fragments/script :: script}"></div>
+<script>
+    function validateAmount() {
+        let amountInput = document.getElementById("amount");
+        let amount = amountInput.value.trim();
+        let errorText = document.getElementById("amountError");
+
+        if (amount === "" || parseFloat(amount) <= 0) {
+            errorText.textContent = "Số tiền phải lớn hơn 0.";
+            errorText.classList.remove("hidden");
+            amountInput.classList.add("border-red-500");
+        } else {
+            errorText.classList.add("hidden");
+            amountInput.classList.remove("border-red-500");
+        }
+    }
+
+    function validateForm() {
+        validateAmount();
+        let errorText = document.getElementById("amountError");
+
+        // Nếu có lỗi thì ngăn form submit
+        return errorText.classList.contains("hidden");
+    }
+
+
+    document.addEventListener('DOMContentLoaded', function() {
+        flatpickr("#createOn", {
+            enableTime: true,
+            enableSeconds: true,
+            time_24hr: true,
+            locale: "vn",  // Sử dụng locale Tiếng Việt
+            dateFormat: "d/m/Y H:i:S",  // Định dạng hiển thị dd/MM/yyyy HH:mm:ss
+            defaultDate: new Date()
+        });
+    });
+
+
+
+</script>
+
+</script>
+
+</body>
+</html>

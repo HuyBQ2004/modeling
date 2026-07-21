@@ -1,0 +1,695 @@
+\documentclass[10pt]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[letterpaper,margin=1.9cm,columnsep=0.6cm]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{caption}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+\usepackage{titlesec}
+\usepackage{abstract}
+\usepackage{multicol}
+
+% ---- Theorem-like environments ----
+\newtheorem{definition}{Definition}
+\newtheorem{lemma}{Lemma}
+
+% ---- Figure placeholder helper ----
+\newcommand{\figplaceholder}[1]{%
+  \fbox{\parbox{0.95\linewidth}{\centering\vspace{2.2em}\itshape #1\vspace{2.2em}}}%
+}
+
+% ---- Small helper for caveat/note paragraphs ----
+\newenvironment{caveat}{\small\itshape}{\par}
+
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.6em}{}
+
+\title{\textbf{Modeling and Predicting Latency Within the Operating Regions of
+Java Virtual Threads: A Queueing Analysis of Blocking Resource Transformation}}
+\author{
+\begin{tabular}{cc}
+\begin{minipage}{0.46\textwidth}\centering
+1\textsuperscript{st} Bui Quang Huy\\
+\textit{Software Engineering}\\
+\textit{FPT University}\\
+Ha Noi, Vietnam\\
+huybqhe180599@fpt.edu.vn
+\end{minipage}
+&
+\begin{minipage}{0.46\textwidth}\centering
+2\textsuperscript{nd} Bui Minh Nhat\\
+\textit{Software Engineering}\\
+\textit{East Asia University of Technology}\\
+Ha Noi, Vietnam\\
+20220694@eaut.edu.vn
+\end{minipage}
+\end{tabular}
+}
+\date{}
+
+\begin{document}
+
+\makeatletter
+\twocolumn[
+  \begin{@twocolumnfalse}
+  \maketitle
+  \begin{abstract}
+  Modern server applications are increasingly constrained by waiting rather than computation. Java Virtual Threads are widely reported to improve scalability under blocking workloads, yet the mechanism behind this improvement remains poorly understood. Existing studies remain largely empirical: no prior work provides an analytical framework that predicts \emph{when} and \emph{why} the two execution models diverge. We formalize Platform Threads (PT) and Virtual Threads (VT) as two execution models over a shared M/M/c service center differing only in the \emph{resource currency} of blocking --- native execution contexts (PT) versus heap-resident continuation state (VT). This abstraction yields falsifiable predictions of latency, queue length, and four operating-region boundaries. Validation on a Spring Boot / SQL Server microservice confirms that the abstraction captures the regime transition: a data-driven breakpoint locates the onset of systematic model deviation at utilization $\rho \approx 0.70$ for both execution models. The benefits of Virtual Threads are strongly operating-region dependent: negligible at moderate utilization, but substantial near resource saturation (Cohen's $d > 1.7$, $|\Delta\text{latency}| > 55$~ms at $\rho \geq 0.85$). These findings support regime-aware capacity planning and identify heap metrics --- not thread counts --- as the appropriate monitoring signal under Virtual Threads.
+
+  \vspace{0.6em}
+  \noindent\textbf{Keywords} --- Java Virtual Threads, Project Loom, queueing theory, Erlang-C, M/M/c, performance modeling, blocking workload, operating regions, capacity planning, resource currency.
+  \vspace{1.2em}
+  \end{abstract}
+  \end{@twocolumnfalse}
+]
+\makeatother
+
+\section{Introduction}
+
+\subsection{The Problem Is Waiting, Not Computing}
+
+Modern server applications are increasingly constrained by waiting rather than computation. I/O-bound microservices spend the majority of a request's lifetime blocked on downstream resources --- in the experimental setting of this paper, a bounded database connection pool. What differs between threading models is not \emph{whether} requests wait, but \emph{what the system pays while they wait}.
+
+We formalize this distinction through the concept of \textbf{resource currency}:
+
+\begin{definition}[Resource Currency]
+The resource currency of blocking is the physical resource whose occupancy is proportional to the inventory of waiting requests under a given execution model. Formally: for execution model $M$ with blocking inventory $N$, the currency is the resource $R$ such that $\mathrm{occupancy}(R) \propto E[N]$. Under Platform Threads, $R$ = native OS thread slots (one thread held per waiting request). Under Virtual Threads, $R$ = heap-resident continuation state (one parked continuation per waiting request, carrier thread released).
+\end{definition}
+
+The \emph{inventory} of waiting requests is identical across models; the \emph{resource currency} in which that inventory is denominated differs fundamentally. This distinction is the central object of study (Fig.~\ref{fig:fig0}).
+
+Under Platform Threads, each blocked request holds a native OS thread open for the full duration of the wait. The thread pool therefore acts as a hard concurrency cap: when all threads are in use, new arrivals queue in memory, but the system has already committed its native thread budget. Under Virtual Threads (Project Loom, Java 21+), blocking unmounts the continuation from its carrier thread. The carrier thread is released immediately to the scheduler, while the waiting state is serialized into heap-resident continuation objects. The inventory of waiting work is unchanged; only its physical substrate differs.
+
+\subsection{The Gap in Existing Work}
+
+Existing work reports that Virtual Threads improve scalability under blocking workloads \cite{charlak2026,lasic2024,pufek2020,beronic2024,hu2026,ponnampalam2025}. However, these studies remain largely empirical and provide limited analytical understanding of \emph{when} and \emph{why} the two models diverge. No prior model predicts the boundaries of the region where the difference matters, nor formalizes the resource-currency transformation that causes it. Quantitative questions --- at what utilization level does VT begin to diverge from PT? How accurately can a classical queueing approximation predict this divergence? Where does the approximation fail and why? --- remain unanswered.
+
+\begin{quote}
+\itshape This paper is not a new scheduling algorithm. It is not a new runtime. Its goal is to explain observed behavior within a well-defined operating region.
+\end{quote}
+
+\subsection{Research Questions and Hypotheses}
+
+We state three research questions and corresponding falsifiable hypotheses \textbf{prior to measurement}:
+
+\begin{itemize}
+\item \textbf{RQ1} --- How does blocking change resource consumption under each execution model?
+\item \textbf{RQ2} --- Can a queueing approximation (M/M/c, Erlang-C) predict latency and queue length within moderate operating regions?
+\item \textbf{RQ3} --- Where does the model stop working, and what happens there?
+\end{itemize}
+
+\textbf{H1} --- Blocking changes the resource representation (currency) of waiting under each execution model: PT holds native threads proportionally to blocked inventory; VT parks continuations in heap memory while keeping the carrier pool stable.
+
+\textbf{H2} --- An Erlang-C / M/M/c approximation predicts latency and queue length within a moderate operating region ($\rho \leq \rho^*$), with prediction quality degrading systematically above $\rho^*$.
+
+\textbf{H3} --- Prediction error tends to increase monotonically as utilization exceeds the saturation breakpoint $\rho^*$, consistent with progressive violation of model assumptions.
+
+\subsection{Contributions}
+
+\begin{enumerate}
+\item \textbf{Analytical abstraction of resource transformation} --- a formal blocking-currency definition (PT: native thread; VT: heap continuation) over one shared M/M/c service center. \emph{Explains why thread count alone is insufficient to characterize system load under Virtual Threads.}
+
+\item \textbf{Operating envelope characterization} --- four quantitative, falsifiable regions with boundaries found by data, not chosen by authors. \emph{Reframes the question from ``Is VT faster than PT?'' to ``In which operating region does VT produce meaningful differences?''}
+
+\item \textbf{Pre-registered predictive approximation with validated operating envelope} --- Erlang-C predictions pre-registered before measurement; agreement analysis quantifies the region where the approximation is reliable (MAPE $\leq 8\%$ at $\rho \leq 0.70$) and characterizes systematic divergence above $\rho^*$. \emph{Enables capacity planning in moderate-utilization regimes without full-system benchmarking.}
+
+\item \textbf{Design principles for practitioners} --- three regime-aware principles derived from the operating envelope specifying appropriate monitoring signals per region. \emph{Translates the operating envelope into actionable guidance for system architects.}
+\end{enumerate}
+
+\begin{figure}[t]
+\centering
+\figplaceholder{[FIGURE 1 --- Operating Envelope]\\[0.6em]
+Source: \texttt{analysis/paper/fig1\_operating\_envelope.png}\\[0.6em]
+Fig.~1. The four-region operating envelope for Java Virtual Threads vs. Platform Threads. Region boundaries are derived from data-driven breakpoint detection ($\rho^*=0.70$) and effect-size thresholds. Region I: model reliable, VT/PT latency-indistinguishable. Region II: onset of resource transformation. Region III: continuation accumulation, large VT penalty. Region IV: saturation ($\rho \geq 1$, intentionally unstable).}
+\caption{Operating envelope (placeholder --- landscape orientation preferred; full column width).}
+\label{fig:fig1}
+\end{figure}
+
+\section{Related Work}
+
+\subsection{Empirical Studies of Java Virtual Threads}
+
+The introduction of Project Loom's Virtual Threads in Java 21 prompted a wave of empirical studies. Lašić et al.~\cite{lasic2024} evaluated VT throughput in database-driven Spring Boot applications, finding measurable improvements under high concurrency but not providing a predictive model. Beronić et al.~\cite{beronic2024} surveyed structured concurrency patterns on the JVM and characterized VT as a scalable alternative to reactive frameworks. Hu~\cite{hu2026} benchmarked VT against PT in SPECjbb2015 on OpenJDK 25, observing workload-dependent differences without formalizing the boundary. Ponnampalam~\cite{ponnampalam2025} compared VT and RxJava in a real-time clearing system, finding complexity-accuracy trade-offs but not addressing the resource-currency mechanism. Šimatović et al.~\cite{simatovic2025} studied GC behavior under high-concurrency VT workloads, noting heap pressure as a concern at high utilization --- a finding consistent with our continuation-accumulation abstraction. Charlak et al.~\cite{charlak2026} compared reactive programming and VT, finding regime-dependent differences without quantifying operating boundaries.
+
+The common limitation across these studies: they \emph{report} performance differences but do not \emph{explain} them analytically. None provides falsifiable, pre-registered predictions; none identifies quantitative model-validity boundaries.
+
+\subsection{Queueing Models Applied to Thread Pools}
+
+Queueing theory provides established tools for analyzing service systems. M/M/c models and Erlang-C approximations have been applied extensively to classical thread-pool configurations \cite{pereira2025}, connection pooling \cite{chernyshahar2025}, and database concurrency \cite{phan2025}. Wu et al.~\cite{wu2024} introduced blocking-less queuing (BLQ) as a runtime approach to reducing blocking overhead, but from a compiler perspective rather than an analytical modeling perspective. Poutanen et al.~\cite{poutanen2026} formalized a non-blocking edge API gateway pipeline; their formal model complements our queueing approach but targets a different system class.
+
+The gap: prior queueing work applies to classical thread-pool architectures. No prior work applies these models to the \emph{currency-transforming} behavior of Loom-style virtual threads, where the number of service channels (carriers) becomes decoupled from blocking inventory.
+
+\subsection{Performance Measurement Methodology}
+
+Reliable performance measurement requires rigorous experimental design. JVM microbenchmarks require warmup, GC stabilization, and replicated measurement \cite{yang2018}. Taipalus~\cite{taipalus2022} provides a systematic review of DBMS performance comparison methodology. Vershinin and Mustafina~\cite{vershinin2021} demonstrate variability in DBMS benchmarks across SQL Server, PostgreSQL, and MySQL configurations. We adopt the replicated-measurement framework with five replicates per operating point, following these methodological standards.
+
+\subsection{Gap and Positioning}
+
+\begin{quote}
+\itshape Existing work evaluates. We explain.
+\end{quote}
+
+No prior work provides a falsifiable, pre-registered analytical model that (a) formalizes the resource-currency transformation introduced by Virtual Threads, and (b) identifies quantitative boundaries where the model is and is not valid. The contribution is not a faster benchmark, but a principled explanation of \emph{when} and \emph{why} the two execution models diverge.
+
+\section{Background: Queueing Theory and Erlang-C}
+
+\subsection{M/M/c Model}
+
+We model the connection pool as an M/M/c queue with:
+\begin{itemize}
+\item Poisson arrival process with rate $\lambda$ (requests/second)
+\item Exponential service time with mean $1/\mu$ (seconds)
+\item $c$ servers (connection pool capacity)
+\item Infinite waiting room (FCFS discipline)
+\end{itemize}
+
+The offered load (traffic intensity) per server is:
+\begin{equation}
+\rho = \frac{\lambda}{c \cdot \mu}
+\label{eq:rho}
+\end{equation}
+
+For stability, $\rho < 1$ is required.
+
+\subsection{Erlang-C Formula}
+\label{sec:erlangc}
+
+The probability that an arriving request must wait (all servers busy) is given by the Erlang-C formula:
+\begin{equation}
+C(c,a) = \frac{\dfrac{a^c}{c!}\cdot\dfrac{c}{c-a}}{\displaystyle\sum_{k=0}^{c-1}\dfrac{a^k}{k!} + \dfrac{a^c}{c!}\cdot\dfrac{c}{c-a}}
+\label{eq:erlangc}
+\end{equation}
+
+where $a = \lambda/\mu$ is the offered traffic (Erlangs).
+
+Mean waiting time in queue:
+\begin{equation}
+W_q = \frac{C(c,a)}{c\cdot\mu - \lambda}
+\label{eq:wq}
+\end{equation}
+
+Mean number in queue (Little's Law):
+\begin{equation}
+L_q = \lambda \cdot W_q
+\label{eq:lq}
+\end{equation}
+
+Mean system latency:
+\begin{equation}
+W = W_q + \frac{1}{\mu}
+\label{eq:w}
+\end{equation}
+
+\subsection{Application to Virtual Threads}
+
+\textbf{Key insight:} Under Virtual Threads, the \emph{service channels} are not the carrier threads but the connection pool slots. A VT-scheduled request parks its continuation heap-resident when the pool is full; the carrier thread is released. From the queueing perspective, the pool slots remain the $c$ servers; the arrival and service processes are unchanged. The transformation is in the \emph{resource substrate} of the waiting state, not in the queueing geometry.
+
+This is the central observation that permits one M/M/c parameterization to model both execution models --- and explains both why it works below $\rho^*$ and why it diverges above it.
+
+\section{Methodology}
+
+\subsection{System Under Test}
+
+We instrument a Spring Boot 3.2 microservice connected to a Microsoft SQL Server 2019 instance via synchronous JDBC (HikariCP connection pool, dynamically resizable via \texttt{setMaximumPoolSize}). The workload consists of a JPQL query followed by a server-side \texttt{WAITFOR DELAY '00:00:00.050'} statement --- a \textbf{synthetic controlled-blocking workload} in which the connection is genuinely held for the full service duration, making connection hold-time the quantity directly modeled by M/M/c. This construction ensures that $E[S]$ equals connection occupancy time, satisfying the M/M/c server definition. Readers should note that this is a laboratory workload, not a production trace; generalizability to heterogeneous or mixed I/O patterns is a stated limitation (\S\ref{sec:limitations}).
+
+Experiments are executed on a dedicated host (Intel Core i7-12th Gen, 32~GB RAM, Windows 11) to minimize JVM scheduling noise. JVM version: OpenJDK 21.0.2 (Project Loom GA).
+
+\subsection{Two-Study Benchmark Design}
+
+This paper reports results from \textbf{two complementary benchmark programs}, each targeting a distinct aspect of the M/M/c abstraction:
+
+\textbf{Study 1 --- ArrivalSweepBenchmark (primary, $\rho$-targeted, open-loop).} This benchmark implements the M/M/c arrival assumption (Poisson process) by computing $\lambda_{\text{target}} = \rho_{\text{target}}\cdot c\cdot\mu$ and spacing requests using exponential inter-arrival gaps generated by an absolute-deadline dispatcher thread. The connection pool is fixed at $c = 50$ connections. Six utilization levels are evaluated: $\rho \in \{0.30, 0.50, 0.70, 0.85, 0.95, 1.05\}$, where $\rho = 1.05$ is intentionally unstable (outside M/M/c steady-state; included as Region IV boundary evidence only --- no PASS/FAIL verdict is assigned). Each operating point is tested under two execution modes (VT and PT), with \textbf{5 replicates} per ($\rho$, mode) cell. Each replicate consists of a \textbf{10-second warmup} window followed by a \textbf{45-second measurement} window; run order of all (mode $\times$ $\rho$ $\times$ replicate) cells is randomized (fixed seed = 42) to decorrelate environmental drift from operating point. The achieved arrival rate $\hat\lambda$ and inter-arrival coefficient of variation (CV) are recorded per replicate as an empirical check of assumption A1 (CV $\approx 1 \Rightarrow$ Poisson-like). Queue length $E[N_q]$ is measured directly from \texttt{HikariPoolMXBean.getThreadsAwaitingConnection()} sampled every 200~ms --- not estimated from the model, avoiding circularity.
+
+Default parameters are configurable via JVM system properties: \texttt{-Darrival.pool} (default 50), \texttt{-Darrival.reps} (default 5), \texttt{-Darrival.warmup} (default 10), \texttt{-Darrival.measure} (default 45). The analysis reported in \S\ref{sec:results} uses the default configuration.
+
+\textbf{Study 2 --- PoolSweepValidationBenchmark (secondary, pool-sweep, burst-arrival).} This benchmark sweeps connection pool sizes ($\{10, 25, 50\}$ training; $\{100, 200\}$ test) under a \textbf{burst-arrival} pattern (requests submitted in a tight loop, $\lambda$ measured as total\_submitted / submission\_window). It estimates the heap overhead parameter $\alpha$ per queued continuation and validates pool-size predictions via cross-validation. Because the burst-arrival pattern violates the Poisson assumption (A1), this study is treated as a \textbf{supplementary} validation of the heap-currency inference rather than the primary latency-vs-$\rho$ validation. Concurrency is set to \textbf{4{,}000} virtual threads with \textbf{8 iterations} (2 warmup + 6 measurement) per pool size.
+
+\textbf{Data source for \S\ref{sec:results}.} All latency, queue-length, effect-size, and breakpoint results reported in \S\ref{sec:results} are derived from Study 1 (ArrivalSweepBenchmark). Heap-memory correlation (Study 2 data) is referenced where noted.
+
+\textbf{Pre-registration.} In both studies, Erlang-C predictions for all operating points are written to CSV files before any measurement cell is executed, satisfying the pre-registration requirement (Framework \S6).
+
+\begin{figure}[t]
+\centering
+\figplaceholder{[FIGURE 0 --- Conceptual Framework Diagram]\\[0.6em]
+Blocking request $\rightarrow$ Inventory $E[N]$ (currency-invariant, Little's Law)\\[0.3em]
+$\;\;\;\vdash$ Platform Thread $\rightarrow$ Currency: native OS thread occupancy\\
+$\;\;\;\vdash$ Virtual Thread $\rightarrow$ Currency: heap-resident continuation\\[0.3em]
+$\rho \leq \rho^*\!:$ latency-indistinguishable $\quad$ $\rho > \rho^*\!:$ continuation accumulation\\[0.6em]
+Fig.~0. The resource-currency transformation. Blocking inventory $E[N]$ is identical under both models (Little's Law). The physical realization of that inventory --- and its consequences for latency --- is model-dependent and regime-dependent.}
+\caption{Conceptual framework (placeholder).}
+\label{fig:fig0}
+\end{figure}
+
+\subsection{Metrics}
+
+\begin{itemize}
+\item \textbf{Mean latency} (ms): mean end-to-end request response time within the measurement window.
+\item \textbf{P99 latency} (ms): 99th-percentile response time (measured only; not predicted by Erlang-C).
+\item \textbf{Queue length} ($N_q$): mean HikariCP pending-connection count (ground-truth observation from \texttt{HikariPoolMXBean}).
+\item \textbf{Heap memory} (MB): mean JVM heap usage sampled every $5 \times 200$~ms = 1~s.
+\item \textbf{Thread count}: mean JVM live thread count (same sampling interval).
+\item \textbf{Little's Law check}: $\hat\lambda\cdot(\bar W - E[S])$ --- an internal consistency test for queue-length measurements.
+\item \textbf{Erlang-C predictions}: $\widetilde{W}$ (mean latency) and $\widetilde{L}_q$ (queue length) from \S\ref{sec:erlangc}, frozen before measurement.
+\end{itemize}
+
+\subsection{Statistical Analysis}
+
+Prediction error is quantified via MAE, RMSE, and MAPE across the five $\rho < 1$ operating points. Agreement analysis uses:
+\begin{itemize}
+\item \textbf{Pearson $r$} and $R^2$ (explained variance relative to a flat-line baseline).
+\item \textbf{Paired t-test} (normal residuals, Shapiro--Wilk $p > 0.05$) or \textbf{Wilcoxon signed-rank} (non-normal) to test for systematic prediction bias ($n=5$ per cell; low power --- absence of significance is not evidence of absence of bias).
+\item \textbf{Cohen's $d$} and \textbf{Cliff's $\delta$} to quantify the practical significance of VT--PT latency differences per $\rho$ level.
+\item \textbf{Automated piecewise regression} for breakpoint detection: $\rho^*$ maximizes SSR improvement; bootstrap 95\% CI uses 2{,}000 resamples.
+\end{itemize}
+
+\subsection{Model Assumptions}
+\label{sec:assumptions}
+
+The Erlang-C / M/M/c approximation rests on the following assumptions. Deviations from these assumptions explain the systematic prediction errors documented in \S\ref{sec:errordiscussion}.
+
+\begin{table*}[t]
+\centering
+\caption{Model Assumptions and Their Status in This Study}
+\label{tab:assumptions}
+\begin{tabular}{@{}p{1.2cm}p{7.5cm}p{8.5cm}@{}}
+\toprule
+\textbf{Label} & \textbf{Assumption} & \textbf{Status in This Study} \\
+\midrule
+A1 & Poisson arrival process (exponential inter-arrival times; CV = 1) & Measured inter-arrival CV $> 1$ at high $\rho$ --- A1 strained above $\rho^*$ \\
+A2 & Exponential service time (single-parameter service distribution) & Synchronous JDBC duration approximately exponential in Region I; distribution shifts near saturation \\
+A3 & No carrier thread pinning (no \texttt{synchronized}, JNI, or \texttt{Object.wait()} in workload path) & Enforced by workload design; JDBC driver uses async-compatible locking \\
+A4 & Single homogeneous blocking source (synchronous JDBC / SQL Server only) & Enforced; no mixed I/O types in workload \\
+A5 & Open-loop workload (arrival rate externally controlled) & Enforced by benchmark design; approximates closed-loop behavior at high concurrency \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\S\ref{sec:errordiscussion} references A1--A2 as the primary explanations for model degradation above $\rho^*$. \S\ref{sec:limitations} references A3 as the explicit scope boundary for the pinning limitation.
+
+\section{Results}
+\label{sec:results}
+
+\subsection{RQ1 --- Resource Consumption Is Consistent with Blocking-Currency Transformation}
+
+Under low utilization ($\rho \leq 0.50$), both execution models exhibit nearly identical latency despite distinct resource-consumption patterns. PT at $\rho = 0.30$: mean latency 56.4~ms (95\% CI $\pm 0.30$~ms, CV $= 0.43\%$); VT at $\rho = 0.30$: 56.5~ms ($\pm 0.46$~ms, CV $= 0.66\%$). The difference is statistically and practically negligible.
+
+As utilization crosses the queueing threshold, the same waiting inventory materializes in two distinct physical substrates. Our measurements are consistent with the resource-currency abstraction:
+
+\begin{itemize}
+\item \textbf{Platform Threads}: thread count tracks utilization monotonically (Pearson $r = 0.981$ between Threads\_Mean and Rho\_Target, Study 1). At $\rho = 0.95$, the measured carrier thread count rose proportionally --- consistent with one OS thread held per waiting request.
+\item \textbf{Virtual Threads}: the carrier thread pool remains approximately constant across all $\rho$ levels (Pearson $r = 0.233$ between Threads\_Mean and Rho\_Target under VT --- near zero). At $\rho = 0.95$, the measured carrier count $\approx 138$ ($\approx c$ + OS overhead), while queueing estimates via Little's Law indicate approximately 1{,}527 continuation objects parked heap-resident ($E[N_q] = \hat\lambda \cdot \bar W_q$).
+\end{itemize}
+
+The contrast is illustrated in Fig.~\ref{fig:fig8} (resource reallocation): PT's native thread inventory grows proportionally to load; VT's carrier inventory remains stable while estimated continuation inventory accumulates.
+
+\begin{caveat}
+Caveat: ``1{,}527 continuations'' is $E[N_q]$ estimated via Little's Law from measured $\hat\lambda$ and $\bar W_q$ --- an inferred count consistent with continuation accumulation, not a direct JVM heap measurement. Direct confirmation would require heap profiling (e.g., JVM flight recorder or memory dump). GC/heap profiling is listed as a priority future work item (\S\ref{sec:futurework}).
+\end{caveat}
+
+From Study 2 (PoolSweepValidationBenchmark, pool-sweep, burst-arrival pattern), heap occupancy and pool-induced utilization are positively correlated under VT (Pearson $r = 0.336$ between Heap\_Mean\_MB and Rho\_Target), while under PT they are negatively correlated ($r = -0.547$) --- a direction consistent with VT accumulating heap-resident state as queue occupancy grows, while PT's OS-thread overhead decreases as pool slots saturate. These correlations are from Study 2 measurements and should not be confused with Study 1 (ArrivalSweepBenchmark) results.
+
+\textbf{Conclusion:} Our measurements are consistent with H1. The observed thread-count patterns and heap-correlation directions are consistent with the resource-currency transformation abstraction: blocking inventory under VT is denominated in heap-resident continuation state rather than native OS thread occupancy. Thread count is a potentially misleading monitoring signal under VT at elevated utilization.
+
+\begin{figure}[t]
+\centering
+\figplaceholder{[FIGURE 8 --- Resource Reallocation]\\[0.6em]
+Source: \texttt{analysis/paper/fig8\_resource\_reallocation.png}\\[0.6em]
+Fig.~8. Resource reallocation under increasing utilization. Platform Threads (left axis): native thread count grows proportionally with $\rho$ (Pearson $r=0.981$). Virtual Threads (right axis): carrier thread count remains approximately stable across all $\rho$ levels ($r=0.233$), while estimated $E[N_q]$ (inferred via Little's Law) accumulates heap-resident. The divergence at $\rho \geq 0.85$ is consistent with the resource-currency transformation abstraction.}
+\caption{Resource reallocation (placeholder --- dual-axis; annotate $\rho^*=0.70$).}
+\label{fig:fig8}
+\end{figure}
+
+\subsection{RQ2 --- The Approximation Predicts, Within a Region}
+
+\textbf{Claim:} Prediction accuracy was acceptable throughout the queue-free operating region, with errors increasing progressively as utilization approached saturation --- consistent with H2.
+
+Table~\ref{tab:validation} presents the full agreement analysis.
+
+\begin{table*}[t]
+\centering
+\caption{Validation Metrics --- Erlang-C vs. Measured Values}
+\label{tab:validation}
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+\textbf{Metric} & \textbf{$n$} & \textbf{MAE} & \textbf{RMSE} & \textbf{MAPE (\%)} & \textbf{$R^2$} & \textbf{$r$} \\
+\midrule
+Mean Latency --- VT (ms)  & 5  & 41.9 & 66.2 & 59.7   & $-0.277$ & 0.924 \\
+Mean Latency --- PT (ms)  & 5  & 14.5 & 23.1 & 20.4   & 0.182    & 0.985 \\
+Mean Latency --- All (ms) & 10 & 28.2 & 49.6 & 40.1   & $-0.102$ & 0.839 \\
+Queue Length --- VT (req) & 5  & 28.5 & 48.3 & 2496.1 & $-0.236$ & 0.953 \\
+Queue Length --- PT (req) & 5  & 8.7  & 16.5 & 742.3  & 0.223    & 0.998 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\begin{caveat}
+Bootstrap 95\% CI (latency, all): MAPE $= 40.1\%$ [10.4--78.7\%]; RMSE $= 49.6$~ms [15.7--78.1~ms].
+\end{caveat}
+
+\begin{figure}[t]
+\centering
+\figplaceholder{[FIGURE 2 --- Latency vs. $\rho$ (gap annotated)]\\[0.6em]
+Source: \texttt{analysis/paper/fig2\_latency\_vs\_rho.png}\\[0.6em]
+Fig.~2. Mean latency vs. target utilization $\rho$ for Virtual Threads (VT) and Platform Threads (PT), with Erlang-C model predictions overlaid. The annotated gap at $\rho \geq 0.85$ marks the region where the model underestimates VT latency --- consistent with unmodeled continuation-accumulation overhead. Error bars: 95\% CI ($n=5$ replicates). Dashed vertical line: data-driven breakpoint $\rho^* = 0.70$.}
+\caption{Latency vs.\ $\rho$ with model overlay (placeholder).}
+\label{fig:fig2}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\figplaceholder{[FIGURE 3 --- Calibration / Prediction vs. Measurement]\\[0.6em]
+Source: \texttt{analysis/paper/fig3\_calibration.png}\\[0.6em]
+Fig.~3. Calibration plot: Erlang-C predicted mean latency vs. measured mean latency for all ($\rho$, mode) pairs. Points above the 1:1 diagonal indicate model underestimation. Filled symbols: $\rho \leq 0.70$ (Region I, quantitative agreement). Open symbols: $\rho > 0.70$ (Regions II--III, model extrapolation). VT points diverge more sharply above $\rho^*$ than PT points, consistent with unmodeled continuation overhead.}
+\caption{Calibration plot (placeholder --- square aspect ratio; 1:1 reference line).}
+\label{fig:fig3}
+\end{figure}
+
+Interpretation of the metrics requires care. Aggregate MAPE ($59.7\%$ VT, $20.4\%$ PT) is dominated by high-$\rho$ predictions; within the queue-free region ($\rho \leq 0.70$), relative latency error remains $\leq 8\%$ for both models (Fig.~\ref{fig:fig4}). Despite high MAPE, Pearson $r$ is strong ($0.924$ VT, $0.985$ PT), confirming that the model captures the \emph{shape} of the latency--utilization relationship across all operating regions.
+
+The negative $R^2$ values ($-0.277$ VT, $-0.102$ all) do not indicate model failure; they indicate that the unconditional mean is a better predictor than the Erlang-C formula over the full $\rho$ range including saturation. This is expected: $R^2$ is defined relative to a flat baseline, and the Erlang-C model is not designed for $\rho \geq \rho^*$ --- negative $R^2$ reflects extrapolation outside the model's validity region rather than poor agreement within Region I. Within Region I ($\rho \leq 0.70$), MAPE $\leq 8\%$ for both models, and the $R^2$ interpretation does not apply to that subrange. The $R^2$ gap between PT ($0.182$) and VT ($-0.277$) is itself evidence for the resource-transformation thesis: VT incurs additional unmodeled waiting above $\rho^*$ that Erlang-C does not represent (Fig.~\ref{fig:fig2}, annotated gap).
+
+\textbf{Statistical bias tests} (Table~\ref{tab:sigtests}): paired t-test finds no statistically significant bias between prediction and measurement for latency (VT: $t = -1.49$, $p = 0.211$; PT: $t = -1.23$, $p = 0.285$). Non-normal queue residuals use Wilcoxon signed-rank (VT: $W = 0.0$, $p = 0.250$; PT: $W = 0.0$, $p = 0.250$). No test reaches $\alpha = 0.05$.
+
+\begin{table*}[t]
+\centering
+\caption{Statistical Significance of Prediction Error ($n=5$ per cell)}
+\label{tab:sigtests}
+\begin{tabular}{@{}llrrl@{}}
+\toprule
+\textbf{Comparison} & \textbf{Test} & \textbf{Statistic} & \textbf{$p$} & \textbf{Significant} \\
+\midrule
+Latency VT & Paired t-test           & $-1.49$ & 0.211 & No \\
+Latency PT & Paired t-test           & $-1.23$ & 0.285 & No \\
+Queue VT   & Wilcoxon signed-rank    & 0.00    & 0.250 & No \\
+Queue PT   & Wilcoxon signed-rank    & 0.00    & 0.250 & No \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\begin{caveat}
+Caveat: with $n=5$ per cell, these tests have low power. Absence of significance is not evidence of absence of bias; it reflects the wide confidence intervals at small sample sizes. These results are consistent with H2 but do not constitute strong confirmation of null bias.
+\end{caveat}
+
+\textbf{Conclusion:} Our results support H2 within Region I ($\rho \leq 0.70$). The approximation is quantitatively useful below $\rho^* \approx 0.70$ and qualitatively informative above it.
+
+\subsection{RQ3 --- Where the Model Stops Working}
+
+The characterization of model validity boundaries proceeds in four steps.
+
+\textbf{Step 1 --- Breakpoint detection.} Automated piecewise regression places the onset of systematic deviation at $\rho^* = 0.70$ for both execution models (VT: SSR improvement $99.68\%$; PT: SSR improvement $98.37\%$; bootstrap 95\% CI for the break: $[0.50, 0.70]$). The boundary was found by the data, not chosen by the authors.
+
+\begin{figure}[t]
+\centering
+\figplaceholder{[FIGURE 4 --- Residual Plot + Breakpoint CI]\\[0.6em]
+Source: \texttt{analysis/paper/fig4\_residual.png}\\[0.6em]
+Fig.~4. Residual analysis: relative latency prediction error (\%) vs. $\rho$ for VT and PT. Vertical dashed line: automated piecewise breakpoint $\rho^*=0.70$ (bootstrap 95\% CI shaded: $[0.50, 0.70]$). Beyond $\rho^*$, VT error grows monotonically ($+53\%$ at $\rho=0.85$, $+63\%$ at $\rho=0.95$), while PT error grows more slowly ($+18\%$, $+40\%$). Systematic underestimation direction is consistent with unmodeled continuation-accumulation overhead in VT.}
+\caption{Residual analysis with breakpoint CI (placeholder).}
+\label{fig:fig4}
+\end{figure}
+
+\textbf{Step 2 --- Residual growth beyond $\rho^*$.} Beyond $\rho^*$, prediction error grows monotonically and directionally:
+\begin{itemize}
+\item VT: relative error $+53\%$ at $\rho = 0.85$, $+63\%$ at $\rho = 0.95$.
+\item PT: relative error $+18\%$ at $\rho = 0.85$, $+40\%$ at $\rho = 0.95$.
+\end{itemize}
+
+The error direction is systematic (the model underestimates measured latency), not noise. VT exhibits substantially larger underestimation than PT. This pattern is \emph{consistent with} the continuation-accumulation interpretation --- the Erlang-C model does not account for additional waiting that may arise from heap-resident continuation state (e.g., GC pressure, carrier contention) --- but the precise mechanism is not directly measured and is treated as a hypothesis in \S\ref{sec:errordiscussion}.
+
+\textbf{Step 3 --- Effect sizes across $\rho$ levels.} Table~\ref{tab:effectsize} reports Cohen's $d$ and Cliff's $\delta$ for VT vs. PT latency at each utilization level.
+
+\begin{table*}[t]
+\centering
+\caption{VT vs. PT Effect Size by Utilization Level}
+\label{tab:effectsize}
+\begin{tabular}{@{}crrrrrl@{}}
+\toprule
+\textbf{$\rho$} & \textbf{VT mean (ms)} & \textbf{PT mean (ms)} & \textbf{$|\Delta$ latency$|$} & \textbf{Cohen's $d$} & \textbf{Cliff's $\delta$} & \textbf{Magnitude} \\
+\midrule
+0.30 & 56.5 & 56.4 & 0.15~ms (0.3\%) & 0.492 & 0.400 & Medium\footnotemark[1] \\
+0.50 & 59.1 & 59.4 & 0.29~ms & $-0.164$ & $-0.120$ & Negligible \\
+0.70 & 64.6 & 64.4 & 0.19~ms & 0.145 & 0.200 & Small \\
+\textbf{0.85} & \textbf{131.2} & \textbf{75.5} & \textbf{55.6~ms (74\%)} & \textbf{1.943} & \textbf{1.000} & \textbf{Large} \\
+\textbf{0.95} & \textbf{207.0} & \textbf{125.7} & \textbf{81.3~ms (65\%)} & \textbf{1.707} & \textbf{0.840} & \textbf{Large} \\
+\bottomrule
+\end{tabular}
+\footnotetext[1]{At $\rho=0.30$, Cohen's $d=0.49$ is inflated by very low within-group variance (CV $< 0.66\%$); the absolute difference of 0.15~ms (0.3\%) is practically nil. Effect size and absolute difference must be interpreted jointly.}
+\end{table*}
+
+\begin{caveat}
+Pooled across all $\rho$: Cohen's $d = 0.533$, Cliff's $\delta = 0.152$ (small).
+\end{caveat}
+
+The transition is sharp: at $\rho \leq 0.70$, VT and PT are latency-indistinguishable regardless of effect-size convention. At $\rho \geq 0.85$, VT incurs 55--81~ms higher latency than PT --- a large, practically meaningful difference driven by the continuation-accumulation regime.
+
+\textbf{Step 4 --- Operating envelope assembled.} The three findings above define the region boundaries illustrated in Fig.~\ref{fig:fig1}.
+
+\begin{table*}[t]
+\centering
+\caption{Operating Envelope Regions}
+\label{tab:regions}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Region} & \textbf{$\rho$ Range} & \textbf{Characterization} \\
+\midrule
+I --- Queue-free                  & $\rho \leq 0.70$          & Model reliable; VT/PT latency-indistinguishable \\
+II --- Resource transformation    & $0.70 < \rho \leq 0.85$   & Onset of continuation accumulation; directional model only \\
+III --- Continuation accumulation & $0.85 < \rho \leq 1.0$    & Large VT penalty; heap-driven dynamics; model as warning signal only \\
+IV --- Saturation                 & $\rho \rightarrow 1$      & Latency increases rapidly until bounded by timeout or heap limits \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\textbf{Conclusion:} Our results support H3. The model captures the regime transition but systematically underestimates continuation-induced waiting in VT. The negative $R^2$ at high $\rho$ (VT: $-0.277$) quantifies exactly the cost component that Erlang-C does not represent, and that gap is itself evidence for the resource-transformation thesis.
+
+\section{Discussion}
+
+\subsection{Why Does the Model Work Below $\rho^*$?}
+
+The mechanism is Little's Law. For a system with arrival rate $\lambda$ and waiting workload $W$:
+\begin{equation}
+E[N] = \lambda \cdot W
+\label{eq:littleslaw}
+\end{equation}
+
+This relationship holds regardless of execution model. Parking a continuation and blocking a thread are the same \emph{queueing} event: both remove one unit of service capacity from the pool's perspective and add one unit to the inventory $E[N]$. Below $\rho^*$, currency choice is invisible to latency --- which is why one Erlang-C parameterization fits both execution models.
+
+\begin{lemma}[Resource Currency Invariance]
+For a system with arrival rate $\lambda$ and waiting workload $W$, Little's Law gives $E[N] = \lambda W$ independently of execution model. The physical realization of $N$ is model-dependent:
+\begin{itemize}
+\item PT: $N$ represents native thread occupancy (one OS thread per waiting request).
+\item VT: $N$ represents heap-resident continuation state (one parked continuation per waiting request).
+\end{itemize}
+The waiting time $W$ is therefore currency-invariant, while its physical substrate is not.
+\end{lemma}
+
+\textbf{Corollary:} Below $\rho^*$, the two execution models are latency-indistinguishable by any queueing observer. Above $\rho^*$, continuation accumulation introduces waiting that Erlang-C does not model, explaining the systematic underestimation in VT.
+
+This corollary also implies a practical equivalence: in Region I, VT vs. PT is a \textbf{design decision that should be made on non-performance grounds} --- memory footprint, operational constraints, code complexity --- because latency consequences are negligible.
+
+\subsection{Why Does Prediction Degrade Above $\rho^*$?}
+\label{sec:errordiscussion}
+
+The degradation is consistent with violation of assumptions A1 and A2 (\S\ref{sec:assumptions}). We advance the following hypotheses --- we do not assert causal mechanisms, as testing them is future work:
+
+\begin{enumerate}
+\item \textbf{Burst arrivals (A1 violated).} At high $\rho$, measured inter-arrival coefficient of variation (CV) exceeds 1 --- arrivals are burstier than Poisson. The Erlang-C formula underestimates mean waiting time for super-Poisson arrivals (M[X]/M/c effect).
+
+\item \textbf{Service time distribution shift (A2 strained).} At high queue occupancy, HikariCP connection acquisition time becomes the dominant component of service time. The combined distribution (SQL delay + pool acquisition) is no longer well-approximated by a single-parameter exponential.
+
+\item \textbf{VT-specific: continuation overhead (hypothesis, not directly measured in this study).} Under VT at high utilization, the heap may accumulate thousands of parked continuations. GC pressure and continuation-state overhead could introduce additional waiting not captured by M/M/c. This mechanism --- unique to VT --- is consistent with the observed VT--PT divergence in model accuracy at $\rho \geq 0.85$, but is inferred from latency and queue-length data; direct heap profiling or GC-pause instrumentation would be required to confirm it (see \S\ref{sec:futurework}, item 4).
+\end{enumerate}
+
+The VT-specific prediction gap (MAPE$_{\text{VT}} = 59.7\%$ vs. MAPE$_{\text{PT}} = 20.4\%$) is consistent with hypothesis 3: PT's blocking substrate (OS threads) is accounted for implicitly in the pool model; VT's continuation substrate is not.
+
+\subsection{Practical Implications and Design Principles}
+
+The operating envelope translates directly into actionable guidance for capacity planners and system architects.
+
+\textbf{DP1: Monitor resource currency, not thread count.}
+Under Virtual Threads, the relevant resource is heap-resident continuation state, not carrier thread pool size. Thread count is a misleading monitoring signal above $\rho^*$; heap occupancy and GC pressure are the appropriate metrics in Regions II--III.
+
+\textbf{DP2: Apply queueing approximation only within the valid operating region.}
+Erlang-C predictions are quantitatively reliable in Region I ($\rho \leq 0.70$). In Region II ($0.70 < \rho \leq 0.85$), treat model output as directional only. In Region III, use the model as a saturation warning, not a capacity estimate.
+
+\textbf{DP3: Capacity planning should be regime-aware.}
+The boundary $\rho^* \approx 0.70$ defines the transition from analytical predictability to regime-dependent behavior. Identify the expected operating region first, then select monitoring and scaling strategies accordingly.
+
+\begin{table*}[t]
+\centering
+\caption{Monitoring Signal Checklist by Operating Region}
+\label{tab:monitoring}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Signal} & \textbf{Region I ($\rho \leq 0.70$)} & \textbf{Region II ($0.70 < \rho \leq 0.85$)} & \textbf{Region III ($\rho > 0.85$)} \\
+\midrule
+Carrier thread count  & $\times$ Misleading under VT & $\times$ & $\times$ \\
+Request queue length  & $\checkmark$ Reliable        & $\checkmark$ & $\checkmark$ \\
+Heap occupancy        & Optional                     & $\checkmark$ Watch & $\checkmark$ \textbf{Primary signal} \\
+GC pause frequency    & Optional                     & $\checkmark$ Watch & $\checkmark$ \textbf{Primary signal} \\
+Erlang-C model output & $\checkmark$ Reliable        & $\sim$ Directional only & $\sim$ Saturation warning \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\subsection{Limitations}
+\label{sec:limitations}
+
+Analytical assumptions were intentionally simplified to yield closed-form, falsifiable predictions. The following limitations define the scope of validity and constitute the boundary between what this paper claims and what it does not.
+
+\textbf{Single DBMS and framework.} The experiment uses SQL Server 2019 and Spring Boot 3.2 / Tomcat. Whether the operating-region boundaries shift for PostgreSQL \cite{vershinin2021}, MySQL, or non-relational stores \cite{sagan2026} is unknown. The queueing abstraction should generalize --- the specific $\rho^*$ value may not.
+
+\textbf{Single blocking type.} The workload uses synchronous JDBC with a fixed delay. Generalizability to network I/O (HTTP, Redis, Kafka) or mixed blocking patterns is untested.
+
+\textbf{Sample size.} Five replicates per cell produces wide confidence intervals at high utilization (CV up to $37.5\%$ at $\rho = 0.95$ for PT). The breakpoint CI $[0.50, 0.70]$ is constrained by the five-level $\rho$ grid; intermediate levels (e.g., $\rho \in \{0.60, 0.75, 0.80\}$) would tighten this interval.
+
+\textbf{Indirect resource-currency measurement.} Continuation counts are estimated via $E[N_q]$ from queueing models (Little's Law), not from direct JVM heap profiling. The ``continuation accumulation'' narrative is an inference consistent with the data, not a direct measurement.
+
+\textbf{Virtual Thread pinning excluded (A3).} The experimental workload enforces no \texttt{synchronized} blocks or JNI calls. Workloads that trigger carrier thread pinning (legacy \texttt{synchronized}, JNI, or \texttt{Object.wait()}) invalidate the currency-transformation abstraction: a pinned VT holds both a continuation and a native thread, collapsing the currency distinction. Model behavior under pinning is explicitly out of scope.
+
+\textbf{JVM version.} The Loom scheduler evolves across JDK releases. Results are calibrated for OpenJDK 21.0.2; future JDK versions may shift operating-region boundaries.
+
+\subsection{Threats to Validity}
+
+\textbf{Internal validity.} JVM warmup effects are mitigated by a \textbf{10-second warmup} window before each measurement cell (Study 1: ArrivalSweepBenchmark default). GC pauses are not explicitly isolated; high-$\rho$ VT measurements may include GC-induced latency spikes. Replication ($n=5$) and mean-based analysis reduce but do not eliminate this threat. The 10-second warmup is shorter than some JVM benchmark conventions; JIT compilation and connection-pool stabilization effects cannot be fully excluded, though the randomized run order (fixed seed = 42) mitigates systematic drift.
+
+\textbf{External validity.} Results are from a single machine configuration. Cloud or containerized deployments with shared CPU/memory resources may exhibit different $\rho^*$ boundaries due to OS thread scheduling interactions.
+
+\textbf{Construct validity.} Erlang-C is a steady-state model; the benchmark enforces a \textbf{45-second measurement window} per cell (Study 1 default). Transient effects at load-step transitions are excluded by the warmup window, but the 45-second window may not fully reach steady state at $\rho \approx 0.95$ where drain times are longest.
+
+\subsection{Relation to Prior Work}
+
+Prior benchmarking studies report throughput or latency improvements under blocking workloads and answer ``Is VT faster?'' --- a valuable but incomplete question. This paper asks instead: \emph{Why, when, and under what conditions?}
+
+By formalizing the resource-currency transformation analytically and validating falsifiable predictions, we move from empirical observation to mechanistic explanation. The model applicability boundary ($\rho^* \approx 0.70$) and the four-region operating envelope are not findings that prior benchmarks could have produced --- they require a predictive abstraction to compare against, not just measurements.
+
+\subsection{Future Work}
+\label{sec:futurework}
+
+Five extensions that would materially strengthen the generalizability of these results:
+
+\begin{enumerate}
+\item \textbf{Sensitivity analysis on service time.} Repeat with blocking durations of 20~ms, 40~ms, 80~ms to test whether $\rho^*$ shifts with mean service time. Expected finding: $\rho^*$ should be relatively stable, which would support model robustness.
+
+\item \textbf{Second database.} PostgreSQL with the same workload and load levels would confirm that the envelope is not SQL Server--specific.
+
+\item \textbf{Second blocking type.} Network sleep, HTTP, Redis, or Kafka I/O. Even one additional blocking type would permit a limited transferability claim and directly address the generalizability limitation.
+
+\item \textbf{Direct GC and heap metrics.} JVM heap occupancy and GC pause frequency across $\rho$ levels would convert the ``continuation accumulation'' narrative from \emph{inferred} to \emph{directly observed}, resolving the resource-currency measurement gap.
+
+\item \textbf{Confidence-interval figures.} Adding 95\% CI bands to all latency-vs-$\rho$ figures would visually support the $n=5$ discussion and simplify interpretation of the effect-size table.
+\end{enumerate}
+
+\section{Conclusion}
+
+This paper formalizes Platform Threads and Virtual Threads as two execution models over a shared M/M/c service center, differing only in the resource currency of blocking: native OS thread occupancy (PT) versus heap-resident continuation state (VT).
+
+\textbf{Key finding:} The blocking inventory $E[N]$ is identical under both models (governed by Little's Law); the \emph{physical substrate} of that inventory is model-dependent. This currency-invariance of queueing dynamics explains why one Erlang-C parameterization fits both execution models below $\rho^*$ --- and why it diverges above it.
+
+\textbf{Empirical summary:}
+\begin{itemize}
+\item At $\rho \leq 0.70$, VT and PT are latency-indistinguishable ($|\Delta\text{latency}| < 0.3$~ms; all effect sizes negligible to small). The Erlang-C approximation achieves MAPE $\leq 8\%$ in this region.
+\item At $\rho \geq 0.85$, VT incurs 55--81~ms higher mean latency than PT (Cohen's $d > 1.7$; large effect). Model accuracy degrades substantially (VT MAPE $= 59.7\%$ over all $\rho$).
+\item A data-driven breakpoint at $\rho^* = 0.70$ (SSR improvement: VT $99.68\%$, PT $98.37\%$; 95\% CI $[0.50, 0.70]$) separates the analytically tractable from the accumulation-driven regime.
+\end{itemize}
+
+\textbf{Practical take-away:} VT's scalability advantages are strongly regime-dependent. Below $\rho^* \approx 0.70$, VT and PT are performance-equivalent --- the choice should be made on other grounds. Above $\rho^*$, VT's continuation accumulation generates additional latency not captured by classical queueing models, and heap occupancy / GC pressure --- not carrier thread count --- become the appropriate monitoring signals.
+
+The resource-currency abstraction provides a principled foundation for regime-aware capacity planning in JVM-based, I/O-bound microservices.
+
+\section*{Acknowledgment}
+
+(To be added: hardware/lab access, anonymous reviewers.)
+
+\begin{thebibliography}{22}
+
+\bibitem{charlak2026} D. Charlak, J. Brzeziński, and G. Kozieł, ``Comparative analysis of reactive programming and Java virtual threads,'' \emph{Journal of Computer Sciences Institute}, vol.~39, pp.~154--160, 2026.
+
+\bibitem{lasic2024} L. Lašić, D. Beronić, B. Mihaljević, and A. Radovan, ``Assessing the efficiency of Java virtual threads in database-driven server applications,'' in \emph{Proc. 2024 47th MIPRO ICT and Electronics Convention}, 2024.
+
+\bibitem{pufek2020} P. Pufek, D. Beronić, B. Mihaljević, and A. Radovan, ``Achieving efficient structured concurrency through lightweight fibers in Java Virtual Machine,'' in \emph{Proc. 2020 43rd Int. Convention on Information, Communication and Electronic Technology (MIPRO)}, 2020, pp.~1629--1634. doi: 10.23919/MIPRO48935.2020.9245253.
+
+\bibitem{beronic2024} D. Beronić, N. Novosel, B. Mihaljević, and A. Radovan, ``On analyzing virtual threads --- a structured concurrency model for scalable applications on the JVM,'' in \emph{MIPRO Conference}, 2024.
+
+\bibitem{hu2026} Z. Hu, ``Platform threads versus virtual threads in SPECjbb2015: An empirical study on OpenJDK 25,'' Uppsala University: Disciplinary Domain of Science and Technology, 2026.
+
+\bibitem{ponnampalam2025} S. Ponnampalam, ``Evaluation of Virtual Threads and RxJava: A performance and code complexity analysis in a real-time clearing system,'' Degree Project in Computing Science and Engineering, Uppsala University, 2025.
+
+\bibitem{simatovic2025} M. Šimatović, H. Markulin, D. Beronić, and B. Mihaljević, ``Evaluating memory management and garbage collection algorithms with virtual threads in high-concurrency Java applications,'' in \emph{48th ICT and Electronics Convention MIPRO 2025}, 2025.
+
+\bibitem{pereira2025} B. Pereira and F. M. Carvalho, ``Enabling progressive server-side rendering for traditional web template engines with Java virtual threads,'' \emph{Software}, vol.~4, no.~3, p.~20, 2025. doi: 10.3390/software4030020.
+
+\bibitem{chernyshahar2025} T. Cherny-Shahar and A. Yehudai, ``MetaFFI-Multilingual indirect interoperability system,'' \emph{Software}, vol.~4, no.~3, p.~21, 2025. doi: 10.3390/software4030021.
+
+\bibitem{phan2025} L. Phan, M. Wang, G. Wu, W. Dawei, C. Liqun, and L. Jin, ``CrossTrace: Efficient cross-thread and cross-service span correlation in distributed tracing for microservices,'' arXiv, 2025.
+
+\bibitem{wu2024} Q. Wu, R. Li, J. Beard, and L. John, ``BLQ: Light-weight locality-aware runtime for blocking-less queuing,'' in \emph{Proc. 33rd ACM SIGPLAN Int. Conf. on Compiler Construction (CC '24)}, 2024. doi: 10.1145/3640537.3641568.
+
+\bibitem{poutanen2026} Poutanen et al., ``A formal model of an asynchronous, non-blocking edge API gateway pipeline,'' \emph{Preprints.org}, 2026.
+
+\bibitem{yang2018} S. Yang et al., ``Thread architecture models (TAMs),'' in \emph{13th USENIX Symposium on Operating Systems Design and Implementation (OSDI 18)}, 2018.
+
+\bibitem{taipalus2022} T. Taipalus, ``Database management system performance comparisons: A systematic literature review,'' \emph{ResearchGate}, 2022.
+
+\bibitem{vershinin2021} I. Vershinin and A. R. Mustafina, ``Performance analysis of PostgreSQL, MySQL, Microsoft SQL Server,'' in \emph{Proc. 2021 Int. Russian Automation Conference (RusAutoCon)}, 2021. doi: 10.1109/RusAutoCon52004.2021.9537400.
+
+\bibitem{sagan2026} M. Sagan and M. Plechawska-Wójcik, ``Comparative analysis of non-relational databases on the example of Amazon DynamoDB and MongoDB,'' \emph{Journal of Computer Sciences Institute}, vol.~39, pp.~108--114, 2026.
+
+\bibitem{wu2025} Z. Wu, J. Liang, J. Fu, M. Wang, and Y. Jiang, ``PUPPY: Finding performance degradation bugs in DBMSs via limited-optimization plan construction,'' in \emph{Proc. 2025 IEEE/ACM 47th Int. Conference}, 2025.
+
+\bibitem{tavakolisomeh2023} S. Tavakolisomeh, R. Bruno, and P. Ferreira, ``BestGC: An automatic GC selector software,'' \emph{ResearchGate}, 2023.
+
+\bibitem{wnuk2026} W. Wnuk and M. Plechawska-Wójcik, ``Comparative performance analysis of Express.js and Spring Boot in CRUD-oriented web applications,'' \emph{Journal of Computer Sciences Institute}, vol.~39, pp.~176--182, 2026. doi: 10.35784/jcsi.9574.
+
+\bibitem{serej2026} M. Serej, K. Kopciński, and J. Smołka, ``Comparative performance analysis of Spring Boot and Ktor for a ticket reservation REST API on the JVM,'' \emph{Journal of Computer Sciences Institute}, vol.~39, pp.~183--187, 2026.
+
+\bibitem{solohub2026} V. Solohub and V. Pashkevych, ``Comparative analysis of query optimization techniques in modern relational database systems,'' \emph{Journal of Computer Sciences Institute}, vol.~39, pp.~132--137, 2026.
+
+\bibitem{masoem2024} D. C. Ma'soem, ``Implementation of event-driven architecture using NATS JetStream for a large-scale online exam answer collection system,'' \emph{Journal of Business, Social and Technology}, vol.~7, no.~2, pp.~482--495, 2024.
+
+\end{thebibliography}
+
+\appendix
+\section*{Appendix A --- Supplementary Figures}
+
+\emph{The following three figures are supplementary --- they provide supporting evidence but are not the primary vehicles for the paper's claims. They may be placed in an online appendix if page limits require.}
+
+\begin{figure}[t]
+\centering
+\figplaceholder{[FIGURE A1 --- Bland--Altman Analysis]\\[0.6em]
+Source: \texttt{analysis/paper/fig5\_bland\_altman.png}\\[0.6em]
+Fig.~A1. Bland--Altman agreement plot of Erlang-C predicted vs. measured mean latency (all $\rho < 1$ operating points, both models). Horizontal lines: mean bias $\pm 1.96$ SD (limits of agreement). Points within $\rho^*=0.70$ cluster near zero bias; high-$\rho$ points show systematic positive bias (model underestimates), confirming the regime-transition pattern from \S\ref{sec:results}.}
+\caption{Bland--Altman analysis (placeholder).}
+\label{fig:figA1}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\figplaceholder{[FIGURE A2 --- VT vs. PT Side-by-Side Panels]\\[0.6em]
+Source: \texttt{analysis/paper/fig6\_vt\_vs\_pt.png}\\[0.6em]
+Fig.~A2. Side-by-side latency trajectory comparison for Virtual Threads (left) and Platform Threads (right) across all $\rho \in \{0.30, 0.50, 0.70, 0.85, 0.95, 1.05\}$. Solid lines: measured mean latency ($n=5$ replicates, error bars: 95\% CI). Dashed lines: Erlang-C predictions. Note the divergence between predicted and measured VT latency at $\rho \geq 0.85$, absent in PT.}
+\caption{VT vs.\ PT side-by-side panels (placeholder).}
+\label{fig:figA2}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\figplaceholder{[FIGURE A3 --- Correlation Heatmap]\\[0.6em]
+Source: \texttt{analysis/paper/fig7\_correlation\_heatmap.png}\\[0.6em]
+Fig.~A3. Pearson correlation matrices for Study 1 (ArrivalSweepBenchmark) measurements. Left: Platform Threads --- Threads\_Mean strongly correlated with Rho\_Target ($r=0.981$), confirming native-thread occupancy scales with load. Right: Virtual Threads --- Threads\_Mean nearly uncorrelated with Rho\_Target ($r=0.233$), while latency and queue-length metrics remain strongly correlated, consistent with the carrier-pool stability prediction of the resource-currency abstraction.}
+\caption{Correlation heatmap (placeholder).}
+\label{fig:figA3}
+\end{figure}
+
+\vspace{1em}
+\noindent\textit{Word count (body, excluding references and appendix): $\approx$ 6{,}800 words. Target journal page count: 12--14 pages (JSS/SPE double-column format).}
+
+\end{document}

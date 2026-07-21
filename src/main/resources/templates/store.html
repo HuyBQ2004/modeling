@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+    <title>Danh sách cửa hàng</title>
+</head>
+<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-6">
+<div class="absolute bottom-6 right-6">
+    <a th:href="@{/owner/manageStores}"
+       class="bg-blue-600 text-white px-4 py-2 rounded shadow-md hover:bg-blue-700 transition duration-300">
+        Quản lý cửa hàng
+    </a>
+</div>
+<div class="text-center mb-6">
+    <h1 class="text-2xl font-semibold mb-2 text-gray-800">Hệ Thống Quản Lý Cửa Hàng Gạo</h1>
+    <p class="text-gray-600">Vui lòng chọn một cửa hàng hoặc tạo mới nếu bạn chưa có.</p>
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-4xl">
+    <th:block th:each="store : ${stores}">
+        <form th:action="@{/home}" method="post" class="w-full">
+            <input type="hidden" name="storeName" th:value="${store.name}">
+            <input type="hidden" name="createdBy" th:value="${store.createdBy}">
+            <button name="store" type="submit"
+                    class="border rounded-lg p-6 flex flex-col items-center bg-white shadow-md hover:shadow-lg transition duration-300 cursor-pointer relative w-full">
+                <div class="bg-blue-500 text-white rounded-full w-16 h-16 flex items-center justify-center text-2xl font-bold mb-2">
+                    <span th:text="${store.name != null and store.name.length() > 0 ? store.name.charAt(0) : '?'}"></span>
+                </div>
+                <p class="font-semibold text-gray-700" th:text="${store.name}"></p>
+            </button>
+        </form>
+    </th:block>
+
+    <div class="border rounded-lg p-6 flex flex-col items-center justify-center bg-white shadow-md hover:shadow-lg transition duration-300 cursor-pointer">
+        <a th:href="@{/owner/createStore}" class="flex flex-col items-center">
+            <div class="bg-gray-300 text-gray-600 rounded-full w-16 h-16 flex items-center justify-center text-3xl mb-2 transition duration-200 hover:bg-gray-400 hover:text-white">
+                +
+            </div>
+            <p class="font-semibold text-gray-700">Tạo mới</p>
+        </a>
+    </div>
+    <div th:replace="~{fragments/noti :: noti}"></div>
+</div>
+<div class="w-full flex justify-center items-center mt-4 gap-12">
+    <button id="prevPage" th:disabled="${currentPage == 0}"
+            th:class="${currentPage == 0 ? 'bg-gray-200 text-black px-8 py-2 rounded' : 'bg-gray-200 text-black px-8 py-2 rounded hover:bg-gray-400 hover:text-white transition duration-200'}"
+            th:onclick="|window.location.href='/owner/store?page=' + ${currentPage - 1} + '&size=' + ${recordsPerPage}|">
+        <i class="fas fa-chevron-left"></i>
+    </button>
+
+    <div class="flex items-center">
+        <span th:text="${currentPage + 1}"></span>
+        <span th:text="'/' + ${totalPages}"></span>
+    </div>
+
+    <button id="nextPage" th:disabled="${currentPage + 1 >= totalPages}"
+            th:class="${currentPage + 1 >= totalPages ? 'bg-gray-200 text-black px-8 py-2 rounded' : 'bg-gray-200 text-black px-8 py-2 rounded hover:bg-gray-400 hover:text-white transition duration-200'}"
+            th:onclick="|window.location.href='/owner/store?page=' + ${currentPage + 1} + '&size=' + ${recordsPerPage}|">
+        <i class="fas fa-chevron-right"></i>
+    </button>
+</div>
+<div th:replace="~{fragments/script :: script}"></div>
+</body>
+</html>

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Bán hàng</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+</head>
+<body class="bg-gray-200">
+
+<div class="fixed top-0 left-0 w-full">
+    <div th:replace="~{fragments/header :: header}"></div>
+</div>
+
+<div class="mt-24">
+    <div class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-1 gap-6 min-h-0 mb-12">
+            <div class="flex flex-col bg-white p-4 rounded-lg shadow-lg">
+                <div class="mb-4 relative">
+                    <input id="search-input"
+                           class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="Tìm kiếm sản phẩm" type="text" autocomplete="off"/>
+                    <ul id="suggestions-list"
+                        class="bg-white border border-gray-300 w-full mt-2 hidden absolute z-10"></ul>
+                </div>
+
+                <div class="mb-4 flex-grow overflow-auto">
+                    <label class="block text-gray-700 font-bold mb-4">
+                        Sản phẩm đã chọn
+                    </label>
+                    <div class="border rounded p-4">
+                        <table class="min-w-full bg-white mb-4">
+                            <thead>
+                            <tr>
+                                <th class="py-2 px-4 border p-2">STT</th>
+                                <th class="py-2 px-4 border p-2">Tên</th>
+                                <th class="py-2 px-4 border p-2">Mô tả</th>
+                                <th class="py-2 px-4 border p-2">Khu vực</th>
+                                <th class="py-2 px-4 border p-2">Giá (VNĐ)</th>
+                                <th class="py-2 px-4 border p-2">Giảm giá</th>
+                                <th class="py-2 px-4 border p-2">Số lượng</th>
+                                <th class="py-2 px-4 border p-2">Loại bỏ</th>
+                            </tr>
+                            </thead>
+                            <tbody id="selected-products">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 min-h-0">
+            <div class="flex flex-col bg-white p-4 rounded-lg shadow-lg">
+                <div class="mb-4 relative">
+                    <div class="flex items-center gap-2">
+                        <input id="search-input-customer"
+                               class="w-2/3 px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="Tìm kiếm khách hàng" type="text" autocomplete="off"/>
+                        <button id="addCustomerBtn"
+                                class="bg-blue-500 text-white px-4 py-2 rounded shadow hover:bg-blue-600">
+                            <i class="fas fa-user-plus mr-2"></i>Thêm Khách Hàng
+                        </button>
+                    </div>
+
+                    <div id="customerForm"
+                         class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center">
+                        <div class="bg-white p-6 rounded shadow-md w-full max-w-md">
+                            <h2 class="text-2xl font-bold mb-4">Thông Tin Khách Hàng</h2>
+                            <form th:action="@{/customerInvoice}" method="post">
+                                <div class="mb-4">
+                                    <label class="block text-gray-700">Tên Khách Hàng</label>
+                                    <input type="text" class="w-full px-3 py-2 border rounded"
+                                           name="customerInvoiceName" id="customerInvoiceName"
+                                           placeholder="Nhập tên khách hàng">
+                                </div>
+                                <div class="mb-4">
+                                    <label class="block text-gray-700">Email</label>
+                                    <input type="email" class="w-full px-3 py-2 border rounded"
+                                           name="customerInvoiceEmail" id="customerInvoiceEmail"
+                                           placeholder="Nhập email">
+                                </div>
+                                <div class="mb-4">
+                                    <label class="block text-gray-700">Số Điện Thoại</label>
+                                    <input type="text" class="w-full px-3 py-2 border rounded"
+                                           name="customerInvoicePhone" id="customerInvoicePhone"
+                                           placeholder="Nhập số điện thoại">
+                                </div>
+                                <div class="mb-4">
+                                    <label class="block text-gray-700">Địa Chỉ</label>
+                                    <input type="text" class="w-full px-3 py-2 border rounded"
+                                           name="customerInvoiceAddress" id="customerInvoiceAddress"
+                                           placeholder="Nhập địa chỉ">
+                                </div>
+                                <div class="flex justify-end">
+                                    <button type="button" id="cancelBtn"
+                                            class="bg-gray-500 text-white px-4 py-2 rounded shadow hover:bg-gray-600 mr-2">
+                                        Hủy
+                                    </button>
+                                    <button type="submit"
+                                            class="bg-blue-500 text-white px-4 py-2 rounded shadow hover:bg-blue-600">
+                                        Lưu
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <ul id="suggestions-list-customer"
+                        class="bg-white border border-gray-300 w-full mt-2 hidden absolute z-10"></ul>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-bold">
+                        Thông tin khách hàng
+                    </label>
+                    <div class="border rounded p-4 mt-4">
+                        <div class="flex items-center mb-8">
+                            <input type="text" placeholder="Tên khách hàng"
+                                   th:value="${customer != null ? customer.name : ''}"
+                                   class="mt-1 block w-full border-b border-gray-300 focus:border-b focus:border-gray-300 outline-none transition duration-300"
+                                   readonly>
+                        </div>
+                        <input type="text" placeholder="Địa chỉ" th:value="${customer != null ? customer.address : ''}"
+                               class="mt-1 block w-full border-b border-gray-300 focus:border-b focus:border-gray-300 outline-none transition duration-300 mb-8"
+                               readonly>
+                        <input type="text" placeholder="Số điện thoại"
+                               th:value="${customer != null ? customer.phone : ''}"
+                               class="mt-1 block w-full border-b border-gray-300 focus:border-b focus:border-gray-300 outline-none transition duration-300 mb-8"
+                               readonly>
+                        <input type="text" placeholder="Email" th:value="${customer != null ? customer.email : ''}"
+                               class="mt-1 block w-full border-b border-gray-300 focus:border-b focus:border-gray-300 outline-none transition duration-300 mb-4"
+                               readonly>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col bg-white p-4 rounded-lg shadow-lg">
+                <div class="mb-4">
+                    <h3 class="text-lg font-bold mb-2">
+                        Chi tiết đơn hàng
+                    </h3>
+                    <div class="border rounded p-4 mt-4">
+                        <table class="min-w-full bg-white mb-4">
+                            <thead>
+                            <tr>
+                                <th class="py-2 px-4 border-b">STT</th>
+                                <th class="py-2 px-4 border-b">Tên</th>
+                                <th class="py-2 px-4 border-b">Số lượng</th>
+                                <th class="py-2 px-4 border-b">Đơn giá</th>
+                                <th class="py-2 px-4 border-b">Thành tiền</th>
+                            </tr>
+                            </thead>
+                            <tbody id="order-details">
+                            <!-- Các sản phẩm sẽ được hiển thị tại đây -->
+                            </tbody>
+                        </table>
+                        <div class="mb-4" style="display: none;">
+                            <p class="text-gray-700 font-bold">
+                                Giảm giá:
+                            </p>
+                            <div class="flex">
+                                <input id="discount-input"
+                                       class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                       placeholder="Nhập số tiền giảm" type="number" min="0"
+                                       onchange="updateTotalAmount()"/>
+                            </div>
+                        </div>
+                        <div style="display: none;">
+                            <p class="text-gray-700 mb-2">
+                                <span class="font-bold">Số tiền giảm: </span>
+                                <span id="discount-amount">0 đ</span>
+                            </p>
+                        </div>
+                        <p class="text-gray-700 mb-2">
+                            <span class="font-bold">Tổng cộng: </span>
+                            <span id="total-amount">0 đ</span>
+                        </p>
+
+                        <form th:action="@{/order}" method="POST" onsubmit="prepareOrderData(event)">
+                            <input type="hidden" id="customer-id" name="customerId"
+                                   th:value="${customer != null ? customer.id : ''}">
+                            <input type="hidden" id="total-amount-hidden" name="totalAmount" value="">
+                            <input type="hidden" id="product-id" name="productId" value="">
+                            <input type="hidden" id="zone-id" name="zoneId" value="">
+                            <input type="hidden" id="selected-products-hidden" name="selectedProducts">
+
+                            <div>
+                                <div class="mt-4 mb-4">
+                                    <label class="block mb-2" for="payment-option">
+                                        Chọn phương thức thanh toán:
+                                    </label>
+                                    <select class="w-full p-2 border rounded" id="payment-option" name="paymentOption">
+                                        <option value="Paid">
+                                            Thanh toán tiền hàng
+                                        </option>
+                                        <option value="In_debt">
+                                            Ghi nợ
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <button type="submit"
+                                    class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                Đặt hàng
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <div th:replace="~{fragments/noti :: noti}"></div>
+</div>
+<div th:replace="~{fragments/script :: script}"></div>
+</body>
+</html>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        let showCustomerForm = /*[[${showCustomerForm} ?: false]]*/ false;
+        if (showCustomerForm) {
+            document.getElementById("customerForm").classList.remove("hidden");
+        }
+    });
+
+    document.getElementById('addCustomerBtn').addEventListener('click', function () {
+        document.getElementById('customerForm').classList.remove('hidden');
+    });
+
+    document.getElementById('cancelBtn').addEventListener('click', function () {
+        document.getElementById('customerForm').classList.add('hidden');
+    });
+</script>
+

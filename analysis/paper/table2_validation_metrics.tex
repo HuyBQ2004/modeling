@@ -1,0 +1,19 @@
+\begin{table}[ht]
+\centering
+\caption{Validation metrics comparing Erlang-C model predictions to measured values. MAE: Mean Absolute Error; RMSE: Root Mean Squared Error; MAPE: Mean Absolute Percentage Error; $R^2$: coefficient of determination; $r$: Pearson correlation. Bootstrap 95\% CI uses 2\,000 resamples.}
+\label{tab:validation}
+\begin{tabular}{lrrrrrr}
+\toprule
+\textbf{Metric} & $n$ & MAE & RMSE & MAPE (\%) & $R^2$ & $r$ \\
+\midrule
+  Mean Latency — VT (ms) & 9 & 14.7 & 27.0 & 19.5 & 0.264 & 0.991 \\
+  Mean Latency — PT (ms) & 9 & 80.3 & 229.0 & 120.6 & -0.124 & -0.094 \\
+  Mean Latency — All (ms) & 18 & 47.5 & 163.0 & 70.0 & -0.063 & 0.034 \\
+  Queue Length — VT (req) & 9 & 7.1 & 18.0 & 357.2 & 0.210 & 0.998 \\
+  Queue Length — PT (req) & 9 & 27.0 & 77.3 & 39932.4 & -0.148 & -0.055 \\
+  Heap Memory (pool sweep) (MB) & 2 & 75.3 & 77.7 & 6.6 & -15.603 & nan \\
+\midrule
+\multicolumn{7}{l}{\footnotesize Bootstrap 95\% CI (latency, all): MAPE = 70.0\% [7.2--189.1\%]; RMSE = 163.0\,ms [5.8--281.6\,ms]} \\
+\bottomrule
+\end{tabular}
+\end{table}

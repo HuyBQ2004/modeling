@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres_server
+    environment:
+      POSTGRES_DB: rice_store
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: StrongPassword!123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/sqlswp1_postgres.sql:/docker-entrypoint-initdb.d/init.sql
+    deploy:
+      resources:
+        limits:
+          memory: 4G # Limit container memory usage to 4 Gigabytes
+        reservations:
+          memory: 4G
+
+volumes:
+  postgres_data:

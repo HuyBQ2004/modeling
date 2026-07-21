@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chỉnh Sửa Hóa Đơn</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+</head>
+<body>
+<div th:replace="~{fragments/header :: header}"></div>
+
+<div class="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md mt-8">
+    <h1 class="text-2xl font-bold text-center mb-6">Cập nhật trạng thái</h1>
+
+    <form th:action="@{/owner/invoices/edit/{id} (id=${invoice.id})}" th:object="${invoice}" method="post">
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700">ID</label>
+            <input type="text" th:field="*{id}" class="mt-1 block w-full border border-gray-300 rounded-md p-2" disabled>
+        </div>
+
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700">Customer</label>
+            <input type="text" th:value="*{customer.getName()}" class="mt-1 block w-full border border-gray-300 rounded-md p-2" disabled>
+        </div>
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700">Ghi chú</label>
+            <input type="text" th:field="*{note}" class="mt-1 block w-full border border-gray-300 rounded-md p-2" disabled>
+        </div>
+
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700">Trạng thái thanh toán</label>
+            <select th:field="*{status}" required class="mt-1 block w-full border border-gray-300 rounded-md p-2">
+                <option value="Unpaid">Chưa thanh toán</option>
+                <option value="Paid">Đã thanh toán</option>
+
+            </select>
+        </div>
+
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700">Tổng tiền</label>
+            <input type="text" th:field="*{totalPrice}" class="mt-1 block w-full border border-gray-300 rounded-md p-2" disabled>
+        </div>
+
+        <button type="submit" class="w-full bg-blue-500 text-white font-bold py-2 rounded hover:bg-blue-600">
+            Lưu
+        </button>
+        <br><br>
+        <button type="button" class="w-full bg-red-500 text-white font-bold py-2 rounded hover:bg-red-600"
+                th:onclick="|window.location.href='@{/owner/invoices}'|">
+            Hủy
+        </button>
+    </form>
+
+    <div th:replace="~{fragments/noti :: noti}"></div>
+</div>
+</body>
+</html>

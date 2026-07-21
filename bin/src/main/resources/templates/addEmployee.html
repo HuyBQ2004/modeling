@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Thêm Nhân Viên</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+</head>
+<body class="bg-gray-100">
+<div class="top-0 left-0 w-full">
+    <div th:replace="~{fragments/header :: header}"></div>
+    <div class="container mx-auto px-4">
+        <div class="max-w-2xl mx-auto mt-10">
+            <div class="bg-white shadow-md rounded-lg overflow-hidden">
+                <!-- Header -->
+                <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-xl font-semibold text-gray-800">Thêm mới nhân viên</h2>
+                </div>
+
+                <!-- Tabs Navigation -->
+                <div class="flex border-b">
+                    <button class="px-4 py-2 text-blue-600 border-b-2 border-blue-500 font-semibold">
+                        Thông tin nhân viên
+                    </button>
+                </div>
+
+                <!-- Form Content -->
+                <form th:action="@{/owner/employees/addEmployee}"
+                      th:object="${employeeDTO}"
+                      method="post"
+                      class="p-6 space-y-4">
+
+                    <!-- Username Field -->
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">Tên đăng nhập</label>
+                        <input type="text"
+                               th:field="*{userName}"
+                               th:classappend="${#fields.hasErrors('userName')} ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300'"
+                               class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               required>
+                        <p th:if="${#fields.hasErrors('userName')}"
+                           class="text-red-500 text-sm mt-1"
+                           th:errors="*{userName}">
+                        </p>
+                    </div>
+
+                    <!-- Password Field -->
+                    <div class="relative">
+                        <label class="block text-gray-700 font-medium mb-2">Mật khẩu</label>
+                        <div class="flex items-center">
+                            <input type="password"
+                                   id="password"
+                                   th:field="*{password}"
+                                   th:classappend="${#fields.hasErrors('password')} ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300'"
+                                   class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                   required>
+                            <button type="button"
+                                    onclick="togglePassword('password', 'toggleIcon')"
+                                    class="absolute right-3 text-gray-500 hover:text-gray-700">
+                                <i id="toggleIcon" class="fas fa-eye-slash"></i>
+                            </button>
+                        </div>
+                        <p th:if="${#fields.hasErrors('password')}"
+                           class="text-red-500 text-sm mt-1"
+                           th:errors="*{password}">
+                        </p>
+                    </div>
+
+                    <!-- Email Field -->
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">Email</label>
+                        <input type="email"
+                               th:field="*{email}"
+                               th:classappend="${#fields.hasErrors('email')} ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300'"
+                               class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <p th:if="${#fields.hasErrors('email')}"
+                           class="text-red-500 text-sm mt-1"
+                           th:errors="*{email}">
+                        </p>
+                    </div>
+
+                    <!-- Name Field -->
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">Tên nhân viên</label>
+                        <input type="text"
+                               th:field="*{name}"
+                               th:classappend="${#fields.hasErrors('name')} ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300'"
+                               class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               required>
+                        <p th:if="${#fields.hasErrors('name')}"
+                           class="text-red-500 text-sm mt-1"
+                           th:errors="*{name}">
+                        </p>
+                    </div>
+
+                    <!-- Address Field -->
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">Địa chỉ</label>
+                        <input type="text"
+                               th:field="*{address}"
+                               th:classappend="${#fields.hasErrors('address')} ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300'"
+                               class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <p th:if="${#fields.hasErrors('address')}"
+                           class="text-red-500 text-sm mt-1"
+                           th:errors="*{address}">
+                        </p>
+                    </div>
+
+                    <!-- Phone Field -->
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">Số điện thoại</label>
+                        <input type="text"
+                               th:field="*{phone}"
+                               th:classappend="${#fields.hasErrors('phone')} ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300'"
+                               class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               required>
+                        <p th:if="${#fields.hasErrors('phone')}"
+                           class="text-red-500 text-sm mt-1"
+                           th:errors="*{phone}">
+                        </p>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex justify-end space-x-4 pt-4">
+                        <a href="/owner/employees"
+                           class="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition duration-300">
+                            Bỏ qua
+                        </a>
+                        <button type="submit"
+                                class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition duration-300">
+                            Thêm nhân viên
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Password Toggle Script -->
+<script>
+    function togglePassword(inputId, iconId) {
+        const passwordInput = document.getElementById(inputId);
+        const icon = document.getElementById(iconId);
+
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        } else {
+            passwordInput.type = 'password';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        }
+    }
+</script>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+</body>
+</html>

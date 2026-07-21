@@ -1,0 +1,22 @@
+\begin{table}[ht]
+\centering
+\caption{Effect size comparing Virtual Thread (VT) to Platform Thread (PT) mean latency at each utilisation level $\rho$. Cohen's $d$: pooled-variance standardised mean difference. Cliff's $\delta$: non-parametric dominance statistic (|$\delta$| $<0.147$ negligible, $<0.33$ small, $<0.474$ medium, else large). Pooled Mann--Whitney $p$ = 0.3056.}
+\label{tab:effect_size}
+\begin{tabular}{rrrrrr}
+\toprule
+$\rho$ & VT mean (ms) & PT mean (ms) & Cohen's $d$ & Cliff's $\delta$ & Magnitude \\
+\midrule
+  0.30 & 56.4 & 56.3 & 0.254 & 0.228 & small \\
+  0.50 & 58.0 & 58.7 & -0.303 & -0.142 & negligible \\
+  0.60 & 60.3 & 69.3 & -0.316 & -0.185 & small \\
+  0.65 & 60.4 & 63.3 & -0.545 & -0.440 & medium \\
+  0.70 & 61.0 & 62.9 & -1.200 & -0.620 & large \\
+  0.75 & 62.5 & 753.2 & -0.323 & -0.547 & large \\
+  0.80 & 66.2 & 65.7 & 0.159 & -0.130 & negligible \\
+  0.85 & 82.2 & 67.2 & 1.332 & 0.720 & large \\
+  0.95 & 161.0 & 90.1 & 1.111 & 0.790 & large \\
+\midrule
+\multicolumn{6}{l}{\footnotesize Pooled (all $\rho$): Cohen's $d = -0.096$, Cliff's $\delta = -0.062$ (negligible)} \\
+\bottomrule
+\end{tabular}
+\end{table}

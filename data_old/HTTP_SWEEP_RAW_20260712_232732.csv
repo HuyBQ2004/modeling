@@ -1,0 +1,2 @@
+Mode,Rho_Target,Rep,Lambda_Target_rps,Lambda_Achieved_rps,InterArrival_CV,Dispatched,Completed,Rejected,Success_Pct,Throughput_rps,Mean_Latency_ms,P99_ms,Nq_Semaphore_Mean,Nq_Semaphore_Max,Little_Nq_Check,Heap_Mean_MB,Heap_Max_MB,Threads_Mean,Threads_Max,GC_Collections,GC_Pause_Total_ms,GC_Pause_Mean_ms,Alloc_Rate_MB_s,Heap_Delta_MB
+PT,0.85,3,710.07,705.24,2.195,31736,31736,0,100.0,705.24,66.15,108.58,3.32,58,4.44,1583.5,2096,187.3,219,15,

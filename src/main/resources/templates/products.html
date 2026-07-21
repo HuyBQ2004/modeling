@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="">
+<head>
+    <meta charset="UTF-8">
+    <title>Quản lý sản phẩm</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+    <style>
+        #errorToast {
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+            opacity: 0;
+            transform: translateX(100px);
+            max-width: 300px;
+        }
+
+        #errorToast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        #successToast {
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+            opacity: 0;
+            transform: translateX(100px);
+            max-width: 300px;
+        }
+
+        #successToast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+
+
+    </style>
+</head>
+<body class="bg-gray-100 p-4">
+<div id="errorModal" class="hidden fixed inset-0 flex justify-center items-center bg-gray-900 bg-opacity-50 z-50">
+    <div class="bg-white p-6 rounded-lg shadow-2xl w-[400px] relative">
+        <h2 class="text-xl font-semibold mb-4 text-center text-red-600">Lỗi khi thêm sản phẩm</h2>
+        <div id="errorModalContent" class="text-red-500"></div>
+        <div class="flex justify-end mt-4">
+            <button class="bg-gray-400 text-white px-4 py-2 rounded" onclick="toggleModal('errorModal')">Đóng</button>
+        </div>
+    </div>
+</div>
+
+
+<div class="fixed top-0 left-0 w-full">
+    <div th:replace="~{fragments/header :: header}"></div>
+</div>
+<div class="mt-28">
+    <div id="errorToast" class="hidden fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded shadow-lg transition-opacity duration-500">
+    </div>
+    <div id="successToast" class="hidden fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg transition-opacity duration-500">
+    </div>
+
+
+    <div class="w-[90%] mx-auto bg-white p-6 rounded-lg shadow-md">
+
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="text-2xl font-semibold">Danh sách sản phẩm</h1>
+            <button onclick="toggleModal('addProductModal')"
+                    class="bg-blue-500 text-white px-4 py-2 rounded flex items-center">
+                <i class="fas fa-plus mr-2"></i> THÊM SẢN PHẨM
+            </button>
+        </div>
+        <!-- Modal Thêm SẢN PHẨM-->
+        <div id="addProductModal"
+             class="hidden fixed inset-0 flex justify-center items-center bg-gray-900 bg-opacity-50 z-50">
+            <div class="bg-white p-6 rounded-lg shadow-2xl w-[400px] relative z-50">
+                <h2 class="text-xl font-semibold mb-4 text-center">Thêm SẢN PHẨM</h2>
+                <form th:action="@{/products/add}" th:object="${newProduct}" method="post"
+                      onsubmit="submitProductForm(event)">
+                    <div class="mb-3">
+                        <label class="block text-gray-700 font-medium">Tên sản phẩm</label>
+                        <input type="text" class="border p-2 w-full rounded focus:outline-blue-500" th:field="*{name}">
+                        <span th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="text-red-500"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="block text-gray-700 font-medium">Mô tả</label>
+                        <textarea type="text" class="border p-2 w-full rounded focus:outline-blue-500" rows="4"
+                                  th:field="*{description}"></textarea>
+                        <span th:if="${#fields.hasErrors('description')}" th:errors="*{description}"
+                              class="text-red-500"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="block text-gray-700 font-medium">Giá</label>
+                        <input type="text" class="border p-2 w-full rounded focus:outline-blue-500" th:field="*{price}">
+                        <span th:if="${#fields.hasErrors('price')}" th:errors="*{price}" class="text-red-500"></span>
+                    </div>
+
+                    <div class="flex justify-end mt-4 gap-3">
+                        <button type="button" class="bg-gray-400 text-white px-4 py-2 rounded"
+                                onclick="toggleModal('addProductModal')">Hủy
+                        </button>
+                        <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Lưu</button>
+                    </div>
+                </form>
+
+
+            </div>
+        </div>
+
+        <div th:each="product : ${products}">
+            <div th:id="'editProductModal-' + ${product.id}"
+                 class="hidden fixed inset-0 flex justify-center items-center bg-gray-900 bg-opacity-50 z-50">
+                <div class="bg-white p-6 rounded-lg shadow-2xl w-[400px] relative z-50">
+                    <h2 class="text-xl font-semibold mb-4 text-center">Chỉnh sửa SẢN PHẨM</h2>
+                    <form th:action="@{/products/update}" method="post" onsubmit="submitEditProductForm(event, this)">
+                        <input type="hidden" name="id" th:value="${product.id}">
+
+                        <div class="mb-3">
+                            <label class="block text-gray-700 font-medium">Tên sản phẩm</label>
+                            <input type="text" class="border p-2 w-full rounded focus:outline-blue-500" name="name"
+                                   th:value="${product.name}" required>
+                            <span class="text-red-500 error-message"></span> <!-- Thêm phần hiển thị lỗi -->
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="block text-gray-700 font-medium">Mô tả</label>
+                            <textarea class="border p-2 w-full rounded focus:outline-blue-500" rows="4"
+                                      name="description" required th:text="${product.description}"></textarea>
+                            <span class="text-red-500 error-message"></span> <!-- Thêm phần hiển thị lỗi -->
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="block text-gray-700 font-medium">Giá</label>
+                            <input type="text" class="border p-2 w-full rounded focus:outline-blue-500" name="price"
+                                   th:value="${product.price}">
+                            <span class="text-red-500 error-message"></span> <!-- Thêm phần hiển thị lỗi -->
+                        </div>
+
+                        <div class="flex justify-end mt-4 gap-3">
+                            <button type="button"
+                                    class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500 transition"
+                                    th:onclick="|toggleModal('editProductModal-' + ${product.id})|">Hủy
+                            </button>
+                            <button type="submit"
+                                    class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition">Cập nhật
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+
+
+        <p class="text-gray-600 mb-4">
+            Tổng cộng: <span th:text="${totalItems}"></span> bản ghi
+        </p>
+
+
+
+
+
+
+        <div class="relative overflow-x-auto max-h-[500px]">
+            <table class="table-auto border-collapse border w-full">
+                <thead class="bg-gray-100 sticky top-0 z-10">
+                <tr class="bg-gray-100">
+
+
+                    <th class="border p-2 relative">Tên sản phẩm
+                        <div class="resizer"></div>
+                    </th>
+                    <th class="border p-2 relative">Mô tả
+                        <div class="resizer"></div>
+                    </th>
+                    <th class="border p-2 relative">Giá/Kg
+                        <div class="resizer"></div>
+                    </th>
+                    <th class="border p-2 relative">Ngày tạo
+                        <div class="resizer"></div>
+                    </th>
+                    <th class="border p-2 relative">Cập nhật
+                        <div class="resizer"></div>
+                    </th>
+                    <th class="border p-2 relative ">Hành động
+                        <div class="resizer"></div>
+                    </th>
+                </tr>
+
+
+                <form method="get" action="/owner/products">
+                    <tr class="bg-gray-50">
+                        <td class="border p-2">
+                            <input type="text" name="productName" th:value="${productName}" class="w-full border rounded p-1" placeholder="Tên sản phẩm">
+                        </td>
+                        <td class="border p-2">
+                            <input type="text" name="description" th:value="${description}" class="w-full border rounded p-1" placeholder="Mô tả">
+                        </td>
+                        <td class="border p-2">
+                            <div class="flex gap-1">
+                                <input type="number" name="priceFrom" th:value="${priceFrom}" step="0.01" class="w-1/2 border rounded p-1" placeholder="Từ">
+                                <input type="number" name="priceTo" th:value="${priceTo}" step="0.01" class="w-1/2 border rounded p-1" placeholder="Đến">
+                            </div>
+                        </td>
+                        <td class="border p-2">
+                            <input type="date" name="createdDate" th:value="${createdDate}" class="w-full border rounded p-1">
+                        </td>
+                        <td class="border p-2">
+                            <input type="date" name="updatedDate" th:value="${updatedDate}" class="w-full border rounded p-1">
+                        </td>
+                        <td class="border p-2">
+                            <div class="flex justify-center gap-3">
+                                <button type="submit" class="bg-blue-500 text-white px-4 py-1 rounded min-w-[100px]">Lọc</button>
+                                <a href="/owner/products" class="bg-gray-400 text-white px-4 py-1 rounded min-w-[100px] text-center">Bỏ lọc</a>
+                            </div>
+
+                        </td>
+                    </tr>
+                </form>
+
+                </thead>
+                <tbody id="tableBody">
+                <tr th:each="product : ${products}">
+                    <td class="border p-2" th:text="${product.name}"></td>
+                    <td class="border p-2" th:text="${product.description}"></td>
+                    <td class="border p-2" th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT') + ' đ'}"></td>
+                    <td class="border p-2"
+                        th:text="${#temporals.format(product.createdAt, 'dd/MM/yyyy ')}"></td>
+                    <td class="border p-2"
+                        th:text="${#temporals.format(product.updatedAt, 'dd/MM/yyyy ')}"></td>
+                    <td class="border p-1">
+                        <div class="flex flex-wrap gap-2 justify-center">
+                            <button class="w-1/3 bg-yellow-300 text-black px-2 py-1 rounded flex items-center justify-center toggle-btn
+                                    hover:bg-yellow-500 hover:text-white transition duration-200"
+                                    data-full='<i class="fas fa-pencil-alt mr-1"></i> Sửa'
+                                    data-icon='<i class="fas fa-pencil-alt"></i>'
+                                    th:onclick="|toggleModal('editProductModal-' + ${product.id})|">
+                                <i class="fas fa-pencil-alt mr-1"></i> Sửa
+                            </button>
+                            <button class="w-1/3 bg-white border border-red-500 text-red-500 px-2 py-1 rounded flex items-center justify-center toggle-btn
+                                    hover:bg-red-500 hover:text-white transition duration-200"
+                                    data-full='<i class="fas fa-trash-alt mr-1"></i> Xoá'
+                                    data-icon='<i class="fas fa-trash-alt"></i>'
+                                    th:onclick="|if(confirm('Bạn có chắc muốn xóa sản phẩm này?')) window.location.href='@{/delete/{id}(id=${product.id})}'|">
+                                <i class="fas fa-trash-alt mr-1"></i> Xóa
+                            </button>
+                        </div>
+
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <!-- Pagination -->
+        <div class="w-full flex justify-center items-center mt-4 gap-2" th:if="${totalPages > 0}">
+            <!-- Previous Page -->
+            <a th:if="${currentPage > 0}"
+               th:href="@{/owner/products(page=${currentPage - 1}, size=5, name=${productName}, description=${description}, priceFrom=${priceFrom}, priceTo=${priceTo}, createdDate=${createdDate}, updatedDate=${updatedDate})}"
+               class="bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-400 hover:text-white transition duration-200">
+                Trước
+            </a>
+
+            <!-- Page Numbers -->
+            <th:block th:each="pageNumber : ${#numbers.sequence(0, totalPages - 1)}">
+                <a th:href="@{/owner/products(page=${pageNumber}, size=5, name=${productName}, description=${description}, priceFrom=${priceFrom}, priceTo=${priceTo}, createdDate=${createdDate}, updatedDate=${updatedDate})}"
+                   th:text="${pageNumber + 1}"
+                   th:classappend="${pageNumber == currentPage} ? 'bg-blue-500 text-white' : 'bg-gray-200 text-black hover:bg-gray-400 hover:text-white'"
+                   class="px-4 py-2 rounded transition duration-200">
+                </a>
+            </th:block>
+
+            <!-- Next Page -->
+            <a th:if="${currentPage + 1 < totalPages}"
+               th:href="@{/owner/products(page=${currentPage + 1}, size=5, name=${productName}, description=${description}, priceFrom=${priceFrom}, priceTo=${priceTo}, createdDate=${createdDate}, updatedDate=${updatedDate})}"
+               class="bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-400 hover:text-white transition duration-200">
+                Sau
+            </a>
+        </div>
+
+
+        <div th:replace="~{fragments/script :: script}"></div>
+    </div>
+    <script>
+        async function submitProductForm(event) {
+            event.preventDefault();  // Ngăn form reload trang mặc định
+
+            let form = event.target;
+            let formData = new FormData(form);
+
+            let response = await fetch(form.action, {
+                method: form.method,
+                body: formData
+            });
+
+            let result = await response.json();
+
+            if (!response.ok) {
+                let errors = [];
+
+                if (result.errorMessage) {
+                    errors.push(result.errorMessage);
+                } else {
+                    for (const [field, message] of Object.entries(result)) {
+                        errors.push(message);
+                    }
+                }
+
+                let errorMessage = errors.join("\n");  // Gộp lỗi thành danh sách
+                showErrorToast(errorMessage);
+            } else {
+                // Lưu thông báo vào localStorage
+                localStorage.setItem("successMessage", result.message);
+
+                // Reload trang ngay lập tức
+                location.reload();
+            }
+        }
+        document.addEventListener("DOMContentLoaded", function () {
+            let successMessage = localStorage.getItem("successMessage");
+
+            if (successMessage) {
+                showSuccessToast(successMessage);
+
+                // Xóa thông báo sau khi hiển thị để không bị lặp lại
+                localStorage.removeItem("successMessage");
+
+                // Ẩn thông báo sau 2 giây
+                setTimeout(() => {
+                    document.getElementById("successToast").classList.remove("show");
+                    setTimeout(() => document.getElementById("successToast").classList.add("hidden"), 500);
+                }, 2000);
+            }
+        });
+
+
+
+
+        function showErrorToast(message) {
+            let toast = document.getElementById("errorToast");
+
+            let errorMessages = message.split(/\n|\. /); // Chia lỗi thành danh sách
+            let errorMessageHTML = "<ul class='pl-4'>";
+            errorMessages.forEach(msg => {
+                if (msg.trim() !== "") {
+                    errorMessageHTML += `<li>${msg}</li>`;
+                }
+            });
+            errorMessageHTML += "</ul>";
+
+            toast.innerHTML = errorMessageHTML;
+            toast.classList.add("show");
+            toast.classList.remove("hidden");
+
+            // Ẩn sau 2 giây
+            setTimeout(() => {
+                toast.classList.remove("show");
+                setTimeout(() => toast.classList.add("hidden"), 500);
+            }, 2000);
+        }
+
+        function showSuccessToast(message) {
+            let toast = document.getElementById("successToast");
+            toast.textContent = message;
+            toast.classList.add("show");
+            toast.classList.remove("hidden");
+
+            // Ẩn sau 2 giây
+            setTimeout(() => {
+                toast.classList.remove("show");
+                setTimeout(() => toast.classList.add("hidden"), 500);
+            }, 2000);
+        }
+
+
+        function toggleModal(modalId) {
+            let modal = document.getElementById(modalId);
+            modal.classList.toggle("hidden");
+        }
+    </script>
+    <script>
+        async function submitEditProductForm(event, form) {
+            event.preventDefault();  // Ngăn form reload trang
+
+            let formData = new FormData(form);
+
+            let response = await fetch(form.action, {
+                method: form.method,
+                body: formData
+            });
+
+            let result = await response.json();
+
+            if (!response.ok) {
+                let errors = [];
+
+                if (result.errorMessage) {
+                    errors.push(result.errorMessage);
+                } else {
+                    for (const message of Object.values(result)) {
+                        errors.push(message);
+                    }
+                }
+
+                let errorMessage = errors.join("\n");
+                showErrorToast(errorMessage);
+            } else {
+
+                localStorage.setItem("successMessage", result.message);
+                location.reload();
+            }
+        }
+    </script>
+</div>
+</body>
+
+</html>

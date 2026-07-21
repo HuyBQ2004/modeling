@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lịch làm việc</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+
+    <style>
+        /* Hide add buttons by default */
+        .add-employee-btn {
+            display: none;
+        }
+
+        /* Show add buttons only when hovering over the cell that doesn't have employees */
+        td:hover .add-employee-btn:not(.has-employees) {
+            display: block;
+        }
+
+        /* Fixed table layout for consistent column widths */
+        table {
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        /* Better column widths - first column wider than date columns */
+        th:first-child, td:first-child {
+            width: 16%;
+        }
+
+        th:not(:first-child), td:not(:first-child) {
+            width: 12%;
+        }
+
+        /* Prevent text overflow for employee names */
+        .employee-name {
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+
+        /* Custom scrollbar for better aesthetics */
+        #employeeSearchResults::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #employeeSearchResults::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        #employeeSearchResults::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        #employeeSearchResults::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+<div class="top-0 left-0 w-full">
+    <div th:replace="~{fragments/header :: header}"></div>
+    <div class="container mx-auto px-4 py-6 max-w-7xl">
+
+        <h1 class="text-2xl font-bold mb-6 text-gray-800">Lịch làm việc</h1>
+
+        <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+            <div class="flex items-center space-x-2">
+                <a th:href="@{/shifts/schedule(weekNumber=${weekNumber - 1}, year=${weekNumber == 1 ? year - 1 : year})}"
+                   class="p-2 border rounded-lg hover:bg-gray-200 transition-colors shadow-sm">
+                    <span>&lt;</span>
+                </a>
+
+                <span th:text="${'Tuần ' + weekNumber + ' - Th ' + weekStart.getMonthValue() + ' ' + year}"
+                      class="px-4 py-2 border rounded-lg font-medium shadow-sm bg-white">
+      </span>
+
+                <a th:href="@{/shifts/schedule(weekNumber=${weekNumber + 1}, year=${weekNumber == 52 ? year + 1 : year})}"
+                   class="p-2 border rounded-lg hover:bg-gray-200 transition-colors shadow-sm">
+                    <span>&gt;</span>
+                </a>
+            </div>
+            <div class="flex space-x-1">
+                <a sec:authorize="hasRole('ROLE_OWNER')" th:href="@{/shifts/add}"
+                   class="px-4 py-2 bg-green-500 text-white border rounded-lg hover:bg-green-600 transition-colors shadow-sm flex items-center">
+                    <i class="fas fa-plus mr-2"></i>Thêm Ca Làm Việc
+                </a>
+                <a th:href="@{/shifts/currentWeek}"
+                   class="px-4 py-2 bg-blue-500 text-white border rounded-lg hover:bg-blue-600 transition-colors shadow-sm">
+                    Tuần này
+                </a>
+            </div>
+
+
+        </div>
+        <div class="bg-white rounded-lg shadow-md overflow-hidden border">
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                    <tr class="bg-gray-50">
+                        <th class="px-4 py-3 border-b border-r text-left font-semibold text-gray-700">Ca làm việc</th>
+                        <th th:each="day : ${#numbers.sequence(0, 6)}"
+                            class="px-4 py-3 border-b border-r text-center font-semibold text-gray-700">
+                            <div th:with="currentDate=${weekStart.plusDays(day)}">
+                                <!-- Hiển thị thứ trong tuần đúng cách -->
+                                <div th:if="${#temporals.dayOfWeek(currentDate) == 7}" class="font-medium">Thứ 2</div>
+                                <div th:if="${#temporals.dayOfWeek(currentDate) == 1}" class="font-medium">Thứ 3</div>
+                                <div th:if="${#temporals.dayOfWeek(currentDate) == 2}" class="font-medium">Thứ 4</div>
+                                <div th:if="${#temporals.dayOfWeek(currentDate) == 3}" class="font-medium">Thứ 5</div>
+                                <div th:if="${#temporals.dayOfWeek(currentDate) == 4}" class="font-medium">Thứ 6</div>
+                                <div th:if="${#temporals.dayOfWeek(currentDate) == 5}" class="font-medium">Thứ 7</div>
+                                <div th:if="${#temporals.dayOfWeek(currentDate) == 6}" class="font-medium">Chủ nhật
+                                </div>
+
+
+                                <!-- Highlight current day if it is today, otherwise show normal date -->
+                                <div th:if="${currentDate.isEqual(#temporals.createToday())}">
+                                    <div class="w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center mx-auto mt-1 text-sm">
+                                        <span th:text="${currentDate.getDayOfMonth() + '/' + currentDate.getMonthValue()}"></span>
+                                    </div>
+                                </div>
+                                <div th:unless="${currentDate.isEqual(#temporals.createToday())}">
+                                    <div class="text-sm text-gray-700 text-center mt-1">
+                                        <span th:text="${currentDate.getDayOfMonth() + '/' + currentDate.getMonthValue()}"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="shift, shiftStat : ${shifts}" th:class="${shiftStat.odd ? 'bg-gray-50' : 'bg-white'}">
+                        <td class="px-4 py-3 border-b border-r">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <div class="font-medium text-gray-800" th:text="${shift.getShiftName()}"></div>
+                                    <div class="text-sm text-gray-500" th:text="${shift.getStartTime() + ' - ' + shift.getEndTime()}"></div>
+                                </div>
+                                <div class="flex items-center space-x-1"> <!-- Thêm flex để căn chỉnh nút xóa -->
+                                    <div class="text-xs text-red-500 hover:text-red-700"> <!-- Nút xóa -->
+                                        <form sec:authorize="hasRole('ROLE_OWNER')" th:action="@{/shifts/delete/{id}(id=${shift.getId()})}" method="post" class="mt-2" onsubmit="return confirm('Bạn có chắc chắn muốn xóa ca làm việc này?');">
+                                            <button type="submit" class="flex items-center">
+                                                <i class="fas fa-trash mr-1"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+
+
+                        <td th:each="day : ${#numbers.sequence(0, 6)}"
+                            class="px-2 py-3 border-b border-r align-top relative group"
+                            th:with="currentDate=${weekStart.plusDays(day)},
+                                     dayKey=${currentDate.toString()},
+                                     employees=${scheduleData.get(shift.getShiftCode()).get(dayKey)}">
+
+                            <!-- Employee assigned to this shift -->
+                            <div th:each="employee : ${employees}"
+                                 class="bg-blue-100 hover:bg-blue-200 transition-colors px-3 py-1.5 rounded-md flex justify-between items-center">
+
+                            <span class="employee-name text-gray-800 cursor-pointer"
+                                  th:text="${employee.getName()}"
+                                  th:attr="data-employee-id=${employee.getId()},
+                                           data-employee-name=${employee.getName()},
+                                           data-employee-phone=${employee.getPhone()},
+                                           data-employee-email=${employee.getEmail()},
+                                           data-employee-role=${employee.getRole()},
+                                           data-shift-info=${shift.getShiftCode() + ' (' + shift.getStartTime() + ' - ' + shift.getEndTime() + ')'}"
+                                  onclick="openEmployeeInfoModal(this)">
+                            </span>
+
+                                <!-- Form để xóa nhân viên khỏi ca -->
+                                <form th:action="@{/shifts/remove}" method="post" class="inline ml-1.5"
+                                      onsubmit="return confirm('Bạn có chắc chắn muốn xóa phân công này?')">
+                                    <input type="hidden" name="userId" th:value="${employee.getId()}"/>
+                                    <input type="hidden" name="shiftId" th:value="${shift.getId()}"/>
+                                    <input type="hidden" name="workDate" th:value="${currentDate}"/>
+                                    <input type="hidden" name="weekNumber" th:value="${weekNumber}"/>
+                                    <input type="hidden" name="year" th:value="${year}"/>
+                                    <button sec:authorize="hasRole('ROLE_OWNER')" type="submit"
+                                            class="text-red-500 hover:text-red-700 transition-colors font-medium">
+                                        &times;
+                                    </button>
+                                </form>
+                            </div>
+                            <button th:if="${employees == null || employees.isEmpty()}"
+                                    class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1.5 rounded-md text-sm w-full add-employee-btn transition-colors shadow-sm"
+                                    th:attr="data-shift-id=${shift.getId()},
+                                data-shift-code=${shift.getShiftCode()},
+                                data-work-date=${currentDate}"
+                                    onclick="openAddEmployeeModal(this)">
+                                Thêm
+                            </button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for employee information -->
+    <div id="employeeInfoModal"
+         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-md">
+
+            <!-- Modal header -->
+            <div class="p-4 border-b">
+                <div class="flex justify-between items-center">
+                    <h3 id="employeeInfoTitle" class="text-lg font-semibold text-gray-800"></h3>
+                    <!-- Hiển thị ca làm việc của ngày được chọn -->
+                    <p class="text-gray-700"><i class="fa fa-clock"></i> <span id="employeeShiftInfo"></span></p>
+                    <button onclick="closeEmployeeInfoModal()"
+                            class="text-gray-500 hover:text-gray-700 text-xl transition-colors">&times;
+                    </button>
+                </div>
+            </div>
+            <!-- Modal body -->
+            <div class="p-4">
+                <div class="space-y-3">
+                    <p class="text-gray-700"><strong>Tên:</strong> <span id="employeeName"></span></p>
+                    <p class="text-gray-700"><strong>Số điện thoại:</strong> <span id="employeePhone"></span></p>
+                    <p class="text-gray-700"><strong>Email:</strong> <span id="employeeEmail"></span></p>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for adding employee -->
+    <div id="addEmployeeModal"
+         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-md">
+            <!-- Modal header with shift information -->
+            <div class="p-4 border-b">
+                <div class="flex justify-between items-center">
+                    <h3 id="modalTitle" class="text-lg font-semibold text-gray-800"></h3>
+                    <button onclick="closeAddEmployeeModal()"
+                            class="text-gray-500 hover:text-gray-700 text-xl transition-colors">&times;
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal body -->
+            <div class="p-4">
+                <p th:text="${user.role == 'ROLE_OWNER' ? 'Chọn nhân viên bạn muốn đặt lịch ở ca này?' : 'Bạn muốn đặt lịch ở ca này?'}" class="mb-4 text-gray-700"></p>
+
+                <form id="addEmployeeForm" th:action="@{/shifts/assign}" method="post">
+                    <input type="hidden" id="modalShiftId" name="shiftId" value=""/>
+                    <input type="hidden" id="modalWorkDate" name="workDate" value=""/>
+                    <input type="hidden" name="weekNumber" th:value="${weekNumber}"/>
+                    <input type="hidden" name="year" th:value="${year}"/>
+                    <input type="hidden" id="selectedUserId" name="userId"
+                           th:value="${user.role == 'ROLE_EMPLOYEE' ? user.id : ''}" />
+
+
+                    <div sec:authorize="hasRole('ROLE_OWNER')" class="mb-4">
+                        <label for="userSearch" class="block text-sm font-medium text-gray-700 mb-2">Tên nhân
+                            viên</label>
+                        <input id="userSearch" type="text"
+                               class="w-full border rounded-md p-2.5 focus:ring-2 focus:ring-blue-300 focus:border-blue-500 outline-none transition-all"
+                               placeholder="Tìm kiếm nhân viên" oninput="filterEmployees()">
+
+                        <div id="employeeSearchResults"
+                             class="mt-2 max-h-48 overflow-y-auto border rounded-md shadow-sm bg-white hidden">
+                        </div>
+                    </div>
+
+                    <div  class="flex justify-between mt-6 gap-4">
+                        <button type="button" onclick="closeAddEmployeeModal()"
+                                class="flex-1 px-6 py-2.5 bg-gray-100 text-gray-700 rounded-md flex items-center justify-center hover:bg-gray-200 transition-colors border shadow-sm">
+                            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                 xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                            Bỏ qua
+                        </button>
+
+                        <button type="submit"
+                                class="flex-1 px-6 py-2.5 bg-green-500 text-white rounded-md flex items-center justify-center hover:bg-green-600 transition-colors shadow-sm">
+                            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                 xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Đồng ý
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div th:replace="~{fragments/script :: script}"></div>
+</div>
+
+
+
+<!-- Include the employee data from server -->
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const allUsers = /*[[${users}]]*/ [];
+
+</script>
+
+
+<script>
+    // Function to format date in Vietnamese format (Thứ X, dd/mm/yyyy)
+    function formatVietnameseDate(dateString) {
+        const date = new Date(dateString);
+        const day = date.getDate();
+        const month = date.getMonth() + 1;
+        const year = date.getFullYear();
+
+        // Get day of week (0 = Sunday, 1 = Monday, etc.)
+        const dayOfWeek = date.getDay();
+
+        // Convert to Vietnamese format
+        let dayName;
+        if (dayOfWeek === 0) {
+            dayName = "Chủ nhật";
+        } else {
+            dayName = `Thứ ${dayOfWeek + 1}`;
+        }
+
+        return `${dayName}, ${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/${year}`;
+    }
+
+    // Function to open employee modal
+    function openAddEmployeeModal(button) {
+        const shiftId = button.getAttribute('data-shift-id');
+        const shiftCode = button.getAttribute('data-shift-code');
+        const workDate = button.getAttribute('data-work-date');
+
+        // Set values in the modal form
+        document.getElementById('modalShiftId').value = shiftId;
+        document.getElementById('modalWorkDate').value = workDate;
+
+        // Set modal title with shift information
+        const formattedDate = formatVietnameseDate(workDate);
+        document.getElementById('modalTitle').textContent = `Ca ${shiftCode} ${formattedDate}`;
+
+        // Show modal
+        document.getElementById('addEmployeeModal').classList.remove('hidden');
+
+        // Clear previous search
+        document.getElementById('userSearch').value = '';
+        document.getElementById('selectedUserId').value = '';
+        document.getElementById('employeeSearchResults').classList.add('hidden');
+        document.getElementById('employeeSearchResults').innerHTML = '';
+
+        // Focus search field
+        setTimeout(() => {
+            document.getElementById('userSearch').focus();
+        }, 100);
+    }
+
+    // Function to close employee modal
+    function closeAddEmployeeModal() {
+        document.getElementById('addEmployeeModal').classList.add('hidden');
+        // Clear form fields
+        document.getElementById('userSearch').value = '';
+        document.getElementById('selectedUserId').value = '';
+        document.getElementById('employeeSearchResults').classList.add('hidden');
+    }
+
+    // Function to close employee information modal
+    function closeEmployeeInfoModal() {
+        document.getElementById('employeeInfoModal').classList.add('hidden');
+    }
+
+    // Function to filter employees based on search
+    function filterEmployees() {
+        const searchTerm = document.getElementById('userSearch').value.toLowerCase().trim();
+        const resultsContainer = document.getElementById('employeeSearchResults');
+
+        // Xóa kết quả cũ
+        resultsContainer.innerHTML = '';
+
+        // Nếu ô tìm kiếm trống, ẩn danh sách
+        if (searchTerm.length === 0) {
+            resultsContainer.classList.add('hidden');
+            return;
+        }
+
+        // Lọc nhân viên theo tên
+        const filteredUsers = allUsers.filter(user => user.name.toLowerCase().includes(searchTerm));
+
+        if (filteredUsers.length === 0) {
+            resultsContainer.innerHTML = '<div class="p-3 text-gray-500 text-center">Không tìm thấy nhân viên nào</div>';
+        } else {
+            filteredUsers.forEach(user => {
+                const userElement = document.createElement('div');
+                userElement.className = 'p-3 hover:bg-gray-100 cursor-pointer transition-colors border-b last:border-b-0';
+                userElement.textContent = user.name;
+                userElement.onclick = function () {
+                    selectEmployee(user.id, user.name);
+                };
+                resultsContainer.appendChild(userElement);
+            });
+        }
+
+        // Hiển thị danh sách dropdown
+        resultsContainer.classList.remove('hidden');
+    }
+
+    // Chọn nhân viên
+    function selectEmployee(userId, userName) {
+        document.getElementById('userSearch').value = userName;
+        document.getElementById('selectedUserId').value = userId;
+
+        // Đánh dấu nhân viên đã chọn trong danh sách kết quả
+        const resultsContainer = document.getElementById('employeeSearchResults');
+        const items = resultsContainer.children;
+
+        for (let i = 0; i < items.length; i++) {
+            items[i].classList.remove('bg-blue-50', 'text-blue-800');
+
+            if (items[i].textContent === userName) {
+                items[i].classList.add('bg-blue-50', 'text-blue-800');
+            }
+        }
+
+        // Ẩn danh sách sau khi chọn
+        setTimeout(() => {
+            resultsContainer.classList.add('hidden');
+        }, 200);
+    }
+
+    // Đóng dropdown khi click bên ngoài
+    document.addEventListener('click', function (event) {
+        const searchBox = document.getElementById('userSearch');
+        const resultsContainer = document.getElementById('employeeSearchResults');
+
+        if (!searchBox.contains(event.target) && !resultsContainer.contains(event.target)) {
+            resultsContainer.classList.add('hidden');
+        }
+    });
+
+    // Close modals when clicking outside
+    document.getElementById('addEmployeeModal').addEventListener('click', function (event) {
+        if (event.target === this) {
+            closeAddEmployeeModal();
+        }
+    });
+
+    document.getElementById('employeeInfoModal').addEventListener('click', function (event) {
+        if (event.target === this) {
+            closeEmployeeInfoModal();
+        }
+    });
+
+    // Check for Enter key in search input to select first result
+    document.getElementById('userSearch').addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+
+            const resultsContainer = document.getElementById('employeeSearchResults');
+            const firstResult = resultsContainer.querySelector('div:not(.text-gray-500)');
+
+            if (firstResult) {
+                firstResult.click();
+            }
+        }
+    });
+
+    function openEmployeeInfoModal(element) {
+        const employeeName = element.getAttribute('data-employee-name');
+        const employeePhone = element.getAttribute('data-employee-phone');
+        const employeeEmail = element.getAttribute('data-employee-email');
+        const shiftInfo = element.getAttribute('data-shift-info'); // Lấy thông tin ca làm việc của ngày đó
+
+        document.getElementById('employeeName').textContent = employeeName;
+        document.getElementById('employeePhone').textContent = employeePhone;
+        document.getElementById('employeeEmail').textContent = employeeEmail;
+        document.getElementById('employeeShiftInfo').textContent = shiftInfo; // Hiển thị ca làm việc
+
+        document.getElementById('employeeInfoModal').classList.remove('hidden');
+    }
+</script>
+
+</body>
+</html>

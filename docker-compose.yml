@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: mssql_server
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "StrongPassword!123"
+    ports:
+      - "1433:1433"
+    volumes:
+      - ./database/sqlswp1.sql:/usr/config/database.sql
+      - ./init-db.sh:/usr/config/init-db.sh
+    entrypoint: /bin/bash -c "/usr/config/init-db.sh & /opt/mssql/bin/sqlservr"
+    
+    # --- THÊM PHẦN GIỚI HẠN RAM VÀO ĐÂY ---
+    deploy:
+      resources:
+        limits:
+          memory: 4G # Giới hạn trần RAM là 4 Gigabyte (Container không thể dùng quá mức này)
+        reservations:
+          memory: 4G # (Tùy chọn) Mức RAM tối thiểu cấp phát khi khởi chạy

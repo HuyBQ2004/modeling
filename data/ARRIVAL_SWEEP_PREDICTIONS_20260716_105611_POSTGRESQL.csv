@@ -1,0 +1,11 @@
+Rho_Target,Lambda_Target_rps,Model_P_wait,Model_E_Nq,Model_E_Wq_ms,Model_Mean_Latency_ms,Model_Region,Model_Valid
+0.30,275.24,0.0000,0.00,0.00,54.50,Queue-free,YES
+0.50,458.73,0.0000,0.00,0.00,54.50,Queue-free,YES
+0.60,550.47,0.0006,0.00,0.00,54.50,Queue-free,YES
+0.65,596.34,0.0028,0.01,0.01,54.51,Queue-free,YES
+0.70,642.22,0.0110,0.03,0.04,54.54,Queue-free,YES
+0.75,688.09,0.0341,0.10,0.15,54.65,Queue-free,YES
+0.80,733.96,0.0870,0.35,0.47,54.97,Queueing,YES
+0.85,779.83,0.1897,1.07,1.38,55.88,Queueing,YES
+0.95,871.58,0.6291,11.95,13.71,68.21,Saturated,YES
+"1.05,963.32,1.0000,NaN,NaN,NaN,""UNSTABLE (rho>=1, Region IV)"",NO_(rho>=1)"

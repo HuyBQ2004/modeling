@@ -1,0 +1,72 @@
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>
+        Đăng nhập
+    </title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+</head>
+<body class="bg-gray-900 flex items-center justify-center min-h-screen">
+<div class="bg-gray-800 rounded-lg shadow-lg flex max-w-4xl w-full">
+    <div class="w-1/2 hidden md:block">
+        <img class="rounded-l-lg object-cover h-full w-full" height="800"
+             src="https://storage.googleapis.com/a1aa/image/S_m9ApEBwOZ6kqms4SwsVU5-k7G4gMxiT4wpykF7tGI.jpg"
+             width="600"/>
+    </div>
+    <div class="w-full md:w-1/2 p-8">
+        <div class="flex items-center mb-6">
+            <i class="fas fa-cubes text-3xl text-orange-500">
+            </i>
+            <h1 class="text-3xl text-white font-bold ml-2">
+                Cửa Hàng Gạo
+            </h1>
+        </div>
+        <h2 class="text-xl text-white mb-6">
+            Đăng nhập vào tài khoản của bạn
+        </h2>
+        <form th:action="@{/login}" method="post">
+            <div class="mb-4">
+                <label class="block text-gray-400 mb-2" for="userNameLogin">
+                    Tên đăng nhập
+                </label>
+                <input class="w-full p-3 rounded bg-[#333] text-white border border-gray-600 focus:outline-none focus:border-gray-400"
+                       id="userNameLogin" name="username" placeholder="Tên đăng nhập" type="text"/>
+            </div>
+            <div class="mb-6">
+                <label class="block text-gray-400 mb-2" for="passwordLogin">
+                    Mật khẩu
+                </label>
+                <input class="w-full p-3 rounded bg-[#333] text-white border border-gray-600 focus:outline-none focus:border-gray-400"
+                       id="passwordLogin" name="password" placeholder="Mật khẩu" type="password"/>
+            </div>
+            <button name="login"
+                    class="w-full p-3 rounded bg-blue-600 text-white font-bold hover:bg-gray-800 transition duration-200">
+                Đăng nhập
+            </button>
+        </form>
+        <div class="mt-4 text-gray-400 text-sm">
+            <a class="hover:underline" href="/forgotPassword">
+                Quên mật khẩu ?
+            </a>
+        </div>
+        <div class="mt-2 text-gray-400">
+            <a class="text-blue-500 hover:underline" th:href="@{/register}">
+                Đăng ký
+            </a>
+        </div>
+        <div class="mt-6 text-gray-400 text-xs">
+            <a class="hover:underline" href="#">
+                Điều khoản sử dụng
+            </a>
+            .
+            <a class="hover:underline" href="#">
+                Chính sách bảo mật
+            </a>
+        </div>
+    </div>
+    <div th:replace="~{fragments/noti :: noti}"></div>
+</div>
+<div th:replace="~{fragments/script :: script}"></div>
+</body>
+</html>

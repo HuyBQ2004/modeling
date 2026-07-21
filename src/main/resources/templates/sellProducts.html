@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="">
+<head>
+  <meta charset="UTF-8">
+  <title>Example</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+</head>
+<body class="bg-gray-100 p-4">
+
+<div class="fixed top-0 left-0 w-full">
+  <div th:replace="~{fragments/header :: header}"></div>
+  <div class="w-[90%] mx-auto bg-white p-6 rounded-lg shadow-md mt-12">
+
+    <div class="flex justify-between items-center mb-4">
+      <h1 class="text-2xl font-semibold">Danh sách tồn kho</h1>
+    </div>
+
+
+    <p class="text-gray-600 mb-4">Tổng cộng: <span th:text="${totalItems}"></span> bản ghi</p>
+
+
+    <div class="overflow-x-auto">
+      <table class="table-auto border-collapse border w-full">
+        <thead>
+        <tr>
+          <th class="border p-2 relative">Tên Sản Phẩm
+            <div class="resizer"></div>
+          </th>
+          <th class="border p-2 relative">Mô tả
+            <div class="resizer"></div>
+          </th>
+          <th class="border p-2 relative">Giá/Kg
+            <div class="resizer"></div>
+          </th>
+          <th class="border p-2 relative">Khu vực
+            <div class="resizer"></div>
+          </th>
+          <th class="border p-2 relative">Số lượng
+            <div class="resizer"></div>
+          </th>
+          <th class="border p-2 relative">Hành động
+            <div class="resizer"></div>
+          </th>
+        </tr>
+        <form method="get" action="/zones">
+          <tr class="bg-gray-50">
+            <td class="border p-2">
+              <input type="text" name="productName" th:value="${productName}" class="w-full border rounded p-1" placeholder="Tên sản phẩm">
+            </td>
+            <td class="border p-2">
+              <input type="text" name="description" th:value="${description}" class="w-full border rounded p-1" placeholder="Mô tả">
+            </td>
+            <td class="border p-2">
+              <div class="flex gap-1">
+                <input type="number" name="minPrice" th:value="${minPrice}" step="0.01" class="w-1/2 border rounded p-1" placeholder="Từ">
+                <input type="number" name="maxPrice" th:value="${maxPrice}" step="0.01" class="w-1/2 border rounded p-1" placeholder="Đến">
+              </div>
+            </td>
+            <td class="border p-2">
+              <input type="text" name="zoneName" th:value="${zoneName}" class="w-full border rounded p-1" placeholder="Khu vực">
+            </td>
+            <td class="border p-2">
+              <div class="flex gap-1">
+                <input type="number" name="minQuantity" th:value="${minQuantity}" step="1" class="w-1/2 border rounded p-1" placeholder="Từ">
+                <input type="number" name="maxQuantity" th:value="${maxQuantity}" step="1" class="w-1/2 border rounded p-1" placeholder="Đến">
+              </div>
+            </td>
+            <td class="border p-2">
+              <div class="flex justify-center gap-3">
+                <button type="submit" class="bg-blue-500 text-white px-4 py-1 rounded min-w-[100px]">Lọc</button>
+                <a href="zones" class="bg-gray-400 text-white px-4 py-1 rounded min-w-[100px] text-center">Xóa</a>
+              </div>
+            </td>
+          </tr>
+        </form>
+
+        </thead>
+
+        <tbody id="tableBody">
+        <tr th:each="item : ${productWithZones}">
+          <td class="border p-2" th:text="${item.productName}"></td>
+          <td class="border p-2" th:text="${item.description}"></td>
+          <td class="border p-2" th:text="${#numbers.formatDecimal(item.price, 0, 'COMMA', 0, 'POINT') + ' đ'}"></td>
+          <td class="border p-2" th:text="${item.zoneName}"></td>
+          <td class="border p-2" th:text="${#numbers.formatDecimal(item.quantity, 0, 'COMMA', 0, 'POINT') + ' kg'}"></td>
+          <td class="border p-2 text-center">--</td> <!-- Placeholder cho hành động -->
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="w-full flex justify-center items-center mt-4 gap-2" th:if="${totalPages > 0}">
+      <!-- Nút "Trước" -->
+      <a th:if="${currentPage > 0}"
+         th:href="@{/zones(
+           page=${currentPage - 1},
+           size=5,
+           productName=${productName},
+           description=${description},
+           minPrice=${minPrice},
+           maxPrice=${maxPrice},
+           zoneName=${zoneName},
+           minQuantity=${minQuantity},
+           maxQuantity=${maxQuantity}
+         )}"
+         class="bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-400 hover:text-white transition duration-200">
+        Trước
+      </a>
+
+      <!-- Danh sách trang -->
+      <th:block th:each="pageNumber : ${#numbers.sequence(0, totalPages - 1)}">
+        <a th:href="@{/zones(
+             page=${pageNumber},
+             size=5,
+             productName=${productName},
+             description=${description},
+             minPrice=${minPrice},
+             maxPrice=${maxPrice},
+             zoneName=${zoneName},
+             minQuantity=${minQuantity},
+             maxQuantity=${maxQuantity}
+           )}"
+           th:text="${pageNumber + 1}"
+           th:classappend="${pageNumber == currentPage} ? 'bg-blue-500 text-white' : 'bg-gray-200 text-black hover:bg-gray-400 hover:text-white'"
+           class="px-4 py-2 rounded transition duration-200">
+        </a>
+      </th:block>
+
+      <!-- Nút "Sau" -->
+      <a th:if="${currentPage + 1 < totalPages}"
+         th:href="@{/zones(
+           page=${currentPage + 1},
+           size=5,
+           productName=${productName},
+           description=${description},
+           minPrice=${minPrice},
+           maxPrice=${maxPrice},
+           zoneName=${zoneName},
+           minQuantity=${minQuantity},
+           maxQuantity=${maxQuantity}
+         )}"
+         class="bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-400 hover:text-white transition duration-200">
+        Sau
+      </a>
+    </div>
+
+
+
+
+  </div>
+</div>
+
+
+<div th:replace="~{fragments/script :: script}"></div>
+</body>
+</html>

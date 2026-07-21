@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="">
+<head>
+    <meta charset="UTF-8">
+    <title>Customer Change History</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+</head>
+<body class="bg-gray-100 min-h-screen p-6">
+<div class="container mx-auto bg-white shadow-md rounded-lg overflow-hidden">
+    <div class="text-black p-4">
+        <h1 class="text-2xl font-bold">Lịch sử thay đổi khách hàng</h1>
+    </div>
+
+    <!-- Search Form (Remains the same as before) -->
+
+    <div class="flex justify-between items-start mb-4">
+        <!-- Form Tìm kiếm (bên trái) -->
+        <form th:action="@{/owner/history/customer}" method="get" class="bg-white p-4">
+            <div class="flex flex-wrap items-center gap-3">
+                <div>
+                    <label class="block text-sm text-gray-700 mb-1">Tên khách hàng</label>
+                    <input type="text" name="customerName" th:value="${param.customerName}"
+                           class="w-full px-2 py-1 border rounded-md text-sm">
+                </div>
+                <div hidden>
+                    <label class="block text-sm text-gray-700 mb-1">Changed Field</label>
+                    <input type="text" name="changedField" th:value="${param.changedField}"
+                           class="w-full px-2 py-1 border rounded-md text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-700 mb-1">Giá trị cũ</label>
+                    <input type="text" name="oldValue" th:value="${param.oldValue}"
+                           class="w-full px-2 py-1 border rounded-md text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-700 mb-1">Thay đổi bởi</label>
+                    <input type="text" name="changedBy" th:value="${param.changedBy}"
+                           class="w-full px-2 py-1 border rounded-md text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-700 mb-1">Ngày bắt đầu</label>
+                    <input type="date" name="startDate" th:value="${param.startDate}"
+                           class="w-full px-2 py-1 border rounded-md text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-700 mb-1">Ngày kết thúc</label>
+                    <input type="date" name="endDate" th:value="${param.endDate}"
+                           class="w-full px-2 py-1 border rounded-md text-sm">
+                </div>
+                <div class="self-end">
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-1 rounded text-sm">
+                        Tìm
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Form Lọc (bên phải) -->
+        <div class="bg-white rounded-lg p-4 h-full flex items-center">
+            <form th:action="@{/owner/history/customer}" method="get" class="w-full">
+                <label class="block text-sm text-gray-700 mb-1">Lọc theo</label>
+                <select id="search-status" name="changedField"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        onchange="this.form.submit()">
+                    <option value="" th:selected="${changedField == ''}">Tất cả</option>
+                    <option value="Họ và Tên" th:selected="${changedField == 'Họ và Tên'}">Họ và Tên</option>
+                    <option value="Email" th:selected="${changedField == 'Email'}">Email</option>
+                    <option value="Địa chỉ" th:selected="${changedField == 'Địa chỉ'}">Địa chỉ</option>
+                    <option value="Số điện thoại" th:selected="${changedField == 'Số điện thoại'}">Số điện thoại</option>
+                </select>
+            </form>
+        </div>
+    </div>
+    <!-- Change History Table -->
+    <div class="p-6">
+        <div th:if="${not #lists.isEmpty(changeHistories)}" class="overflow-x-auto">
+            <table class="w-full border-collapse">
+                <thead>
+                <tr class="bg-gray-200">
+                    <th class="border p-3 text-left">ID</th>
+                    <th class="border p-3 text-left">Khách hàng</th>
+                    <th class="border p-3 text-left">Giá trị thay đổi</th>
+                    <th class="border p-3 text-left">Giá trị cũ</th>
+                    <th class="border p-3 text-left">Giá trị mới</th>
+                    <th class="border p-3 text-left">Người thay đổi</th>
+                    <th class="border p-3 text-left">Ngày đổi</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="history : ${changeHistories}"
+                    class="hover:bg-gray-100 transition-colors">
+                    <td class="border p-3" th:text="${history.getId()}"></td>
+                    <td class="border p-3" th:text="${history.getCustomerName()}"></td>
+                    <td class="border p-3" th:text="${history.getChangedField()}"></td>
+                    <td class="border p-3" th:text="${history.getOldValue()}"></td>
+                    <td class="border p-3" th:text="${history.getNewValue()}"></td>
+                    <td class="border p-3" th:text="${history.getChangedBy()}"></td>
+                    <td class="border p-3" th:text="${#temporals.format(history.getChangedAt(), 'yyyy-MM-dd')}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="flex justify-between items-center mt-6 p-4">
+            <div class="flex items-center space-x-2">
+                <label for="sizeSelect" class="text-sm text-gray-700">Số mục trên mỗi trang:</label>
+                <select id="sizeSelect"
+                        class="border rounded-md px-2 py-1 text-sm"
+                        onchange="changePageSize()">
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                </select>
+            </div>
+
+
+            <!-- Nút điều hướng trang -->
+            <div class="flex items-center justify-center space-x-4 p-4">
+                <!-- Trước Button -->
+                <a th:if="${currentPage > 0}"
+                   th:href="@{/owner/history/customer(page=${currentPage - 1}, size=${param.size})}"
+                   class="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-300 ease-in-out">
+                    Trước
+                </a>
+                <span th:unless="${currentPage > 0}"
+                      class="flex items-center px-4 py-2 text-sm font-medium text-gray-400 bg-gray-100 border border-gray-200 rounded-md cursor-not-allowed">
+        Trước
+    </span>
+
+                <!-- Page Information -->
+                <div class="text-sm text-gray-700 font-medium">
+                    Trang <span th:text="${currentPage + 1}"></span> / <span th:text="${totalPages}"></span>
+                </div>
+
+                <!-- Sau Button -->
+                <a th:if="${currentPage + 1 < totalPages}"
+                   th:href="@{/owner/history/customer(page=${currentPage + 1}, size=${param.size})}"
+                   class="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-300 ease-in-out">
+                    Sau
+                </a>
+                <span th:unless="${currentPage + 1 < totalPages}"
+                      class="flex items-center px-4 py-2 text-sm font-medium text-gray-400 bg-gray-100 border border-gray-200 rounded-md cursor-not-allowed">
+        Sau
+    </span>
+            </div>
+        </div>
+        <div th:if="${#lists.isEmpty(changeHistories)}"
+             class="text-center text-gray-500 p-6">
+            Không tìm thấy lịch sử thay đổi.
+        </div>
+    </div>
+
+    <div class=" p-4 text-right">
+        <a th:href="@{/customers}"
+           class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+            Quay lại trang Khách hàng
+        </a>
+    </div>
+</div>
+<script>
+    function changePageSize() {
+        const selectedSize = document.getElementById("sizeSelect").value;
+        const url = new URL(window.location.href);
+        url.searchParams.set('size', selectedSize);
+        url.searchParams.set('page', 0);
+        window.location.href = url.toString();
+    }
+
+    // Giữ nguyên giá trị đã chọn khi reload
+    document.addEventListener("DOMContentLoaded", function () {
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentSize = urlParams.get('size') || '5';
+        document.getElementById("sizeSelect").value = currentSize;
+    });
+</script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+</body>
+</html>

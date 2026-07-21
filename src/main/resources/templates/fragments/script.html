@@ -1,0 +1,23 @@
+<div th:fragment="script">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <script th:src="@{/assets/js/dropdownUser.js}"></script>
+    <script th:src="@{/assets/js/noti.js}"></script>
+    <script th:src="@{/assets/js/showPassword.js}"></script>
+    <script th:src="@{/assets/js/autoFillRegister.js}"></script>
+    <script th:src="@{/assets/js/autoFillLogin.js}"></script>
+    <script th:src="@{/assets/js/autoFillCustomerInvoice.js}"></script>
+    <script th:src="@{/assets/js/autoFillCreateStore.js}" th:if="${page == 'createStore'}"></script>
+    <script th:src="@{/assets/js/resizeTable.js}"></script>
+    <script th:src="@{/assets/js/collapse.js}"></script>
+    <script th:src="@{/assets/js/currentPage.js}"></script>
+    <script th:src="@{/assets/js/confirmDelete.js}"></script>
+    <script th:src="@{/assets/js/selectDate.js}"></script>
+    <script th:src="@{/assets/js/filterStores.js}"></script>
+    <script th:src="@{/assets/js/paginationRecord.js}"></script>
+    <script th:src="@{/assets/js/searchCustomer.js}"></script>
+    <script th:src="@{/assets/js/searchProduct.js}"></script>
+    <script th:src="@{/assets/js/filterInvoice.js}"></script>
+
+</div>

@@ -1,0 +1,3 @@
+Pool_Size,Model_rho,Model_P_wait,Model_Region,Model_Mean_Latency_ms,Measured_Mean_Latency_ms,CI95_Latency_ms,Latency_Error_Pct,Measured_P99_ms,CI95_P99_ms,Model_Heap_MB,Measured_Heap_MB,CI95_Heap_MB,Heap_Error_Pct,Validation_Pass
+100,0.9999,0.9988,Resource-Exhaustion,10556.59,8814.08,±172.66,19.8%,15723.84,±325.54,2024.92,2377.33,±85.11,14.8%,PASS
+200,0.9999,0.9983,Resource-Exhaustion,5327.91,10465.16,±3771.77,49.1%,18669.60,±6458.02,2024.23,1969.50,±177.69,2.8%,FAIL

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thêm Khu Vực</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+</head>
+<body class="bg-gray-100 p-6">
+<div class="fixed top-0 left-0 w-full">
+    <div th:replace="~{fragments/header :: header}"></div>
+</div>
+
+<div class="mt-28">
+    <div class="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
+        <h1 class="text-2xl font-bold text-center mb-6">Thêm Khu Vực</h1>
+        <form th:action="@{/owner/zone/add}" method="post">
+            <div id="errorAlert" class="alert alert-danger" role="alert"></div>
+            <div class="mb-4">
+                <label for="name" class="block text-sm font-medium text-gray-700">Tên khu vực:</label>
+                <input type="text" id="name" name="name" required
+                       class="mt-1 block w-full border border-gray-300 rounded-md p-2" >
+            </div>
+            <div class="mb-4">
+                <label for="address" class="block text-sm font-medium text-gray-700">Địa chỉ:</label>
+                <input type="text" id="address" name="address" required
+                       class="mt-1 block w-full border border-gray-300 rounded-md p-2" >
+            </div>
+            <button type="submit" class="w-full bg-blue-500 text-white font-bold py-2 rounded hover:bg-blue-600">Thêm
+                Khu
+                vực
+            </button>
+            <br><br>
+            <button type="button" class="w-full bg-red-500 text-white font-bold py-2 rounded hover:bg-red-600"
+                    th:onclick="|window.location.href='@{/owner/zone}'|">Hủy
+            </button>
+        </form>
+    </div>
+    <div th:replace="~{fragments/noti :: noti}"></div>
+</div>
+
+<div th:replace="~{fragments/script :: script}"></div>
+</body>
+</html>

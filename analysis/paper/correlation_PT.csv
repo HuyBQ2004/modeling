@@ -1,0 +1,8 @@
+,Lambda_Achieved_rps,Mean_Latency_ms,P99_ms,Nq_Hikari_Mean,Heap_Mean_MB,Threads_Mean,Rho_Target
+Lambda_Achieved_rps,1.0,0.87,0.871,0.884,-0.048,0.925,0.994
+Mean_Latency_ms,0.87,1.0,0.98,0.95,-0.005,0.945,0.873
+P99_ms,0.871,0.98,1.0,0.962,-0.001,0.936,0.872
+Nq_Hikari_Mean,0.884,0.95,0.962,1.0,0.011,0.941,0.886
+Heap_Mean_MB,-0.048,-0.005,-0.001,0.011,1.0,-0.033,-0.04
+Threads_Mean,0.925,0.945,0.936,0.941,-0.033,1.0,0.928
+Rho_Target,0.994,0.873,0.872,0.886,-0.04,0.928,1.0
